@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Overview — Site Progress Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:            #F3F1EC;
+    --surface:       #FFFFFF;
+    --ink:           #16202B;
+    --ink-soft:      #4C5A67;
+    --line:          #D8D3C7;
+    --line-soft:     #E7E3D8;
+    --navy:          #1B3A5C;
+    --navy-deep:     #10263D;
+    --orange:        #E15A2D;
+    --steel:         #7C97AE;
+    --green:         #4B7A5B;
+    --amber:         #C68A1E;
+    --radius:        2px;
+    --gap:           20px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Inter', -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Space Grotesk', 'Inter', sans-serif; font-weight:600;
+    letter-spacing:-0.01em; margin:0;
+  }
+  a{color:inherit;}
+  button{cursor:pointer; font-family:inherit;}
+
+  .blueprint{
+    background-color:var(--navy-deep);
+    background-image:
+      linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+    background-size:28px 28px;
+  }
+  .bracketed{position:relative;}
+  .bracketed::before, .bracketed::after{
+    content:""; position:absolute; width:14px; height:14px;
+    border-color:var(--orange); border-style:solid; border-width:0;
+  }
+  .bracketed::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
+  .bracketed::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
+
+  .wrap{max-width:1240px; margin:0 auto; padding:0 28px;}
+  .kicker{color:var(--steel); font-size:12.5px; letter-spacing:0.02em; margin-bottom:8px;}
+
+  header .wrap{ display:flex; align-items:center; justify-content:space-between; padding:26px 28px; flex-wrap:wrap; gap:14px; }
+  header h1{color:#fff; font-size:24px;}
+
+  .btn{ font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:2px; border:1px solid transparent; cursor:pointer; }
+  .btn-outline{background:transparent; color:var(--navy); border-color:var(--line);}
+  .btn-outline:hover{border-color:var(--navy);}
+  .back-link{
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:2px;
+    border:1px solid rgba(255,255,255,0.35); background:transparent; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .back-link:hover{border-color:#fff;}
+
+  main{padding:30px 0 60px;}
+
+  .panel{background:var(--surface); border:1px solid var(--line); padding:22px;}
+  .panel-title{
+    font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line-soft);
+  }
+  .panel-title .title-left{display:flex; align-items:center; gap:8px;}
+  .panel-title .tick{width:8px; height:8px; background:var(--orange); flex:none;}
+
+  /* Aggregate ring */
+  .aggregate-row{display:flex; align-items:center; gap:36px; flex-wrap:wrap;}
+  .aggregate-stats{display:flex; gap:28px; flex-wrap:wrap;}
+  .aggregate-stat .num{font-family:'Space Grotesk', sans-serif; font-size:28px; font-weight:700;}
+  .aggregate-stat .lbl{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .ring-wrap{position:relative; flex:none;}
+  .ring-wrap svg{display:block; transform:rotate(-90deg);}
+  .ring-track{fill:none; stroke:var(--line-soft);}
+  .ring-fill{fill:none; stroke:var(--green); stroke-linecap:round; transition:stroke-dashoffset 0.6s ease;}
+  .ring-pct{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--ink);
+  }
+
+  /* Portfolio grid */
+  .portfolio-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:24px; margin-top:var(--gap);}
+  .project-card{background:var(--surface); border:1px solid var(--line); padding:20px; display:flex; flex-direction:column; gap:14px;}
+  .project-card-head{display:flex; gap:16px; align-items:center;}
+  .project-card-title h3{font-size:15.5px;}
+  .project-card-title .code{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .status-chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:4px 10px; border-radius:20px;
+    margin-top:8px; border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .status-chip .dot{width:6px; height:6px; border-radius:50%; background:var(--amber); flex:none;}
+  .status-chip.ok{color:var(--green); border-color:var(--green);}
+  .status-chip.ok .dot{background:var(--green);}
+  .status-chip.complete{color:var(--steel); border-color:var(--steel);}
+  .status-chip.complete .dot{background:var(--steel);}
+
+  .project-details{display:grid; grid-template-columns:auto 1fr; gap:5px 14px; font-size:12.5px; margin:0;}
+  .project-details dt{color:var(--ink-soft);}
+  .project-details dd{margin:0; text-align:right; font-weight:500;}
+
+  .gallery{position:relative; background:var(--bg); border:1px solid var(--line-soft); height:170px; overflow:hidden;}
+  .gallery img{width:100%; height:100%; object-fit:cover; display:block;}
+  .gallery-empty{display:flex; align-items:center; justify-content:center; height:100%; color:var(--ink-soft); font-size:12px;}
+  .gallery-nav{
+    position:absolute; top:50%; transform:translateY(-50%); background:rgba(16,38,61,0.55); color:#fff;
+    border:none; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px;
+  }
+  .gallery-nav:hover{background:rgba(16,38,61,0.8);}
+  .gallery-nav.prev{left:8px;}
+  .gallery-nav.next{right:8px;}
+  .gallery-count{
+    position:absolute; bottom:8px; right:10px; background:rgba(16,38,61,0.6); color:#fff;
+    font-size:10.5px; padding:2px 8px; border-radius:10px;
+  }
+
+  .card-footer{display:flex; justify-content:flex-end;}
+
+  .empty-state, .error-note{font-size:13px; color:var(--ink-soft); padding:30px 0; text-align:center;}
+  .error-note{color:var(--orange);}
+
+  /* Add outlet modal */
+  .btn-primary{background:var(--orange); color:#fff; border-color:var(--orange);}
+  .settings-overlay{
+    display:none; position:fixed; inset:0; z-index:100; background:rgba(16,38,61,0.55);
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .settings-overlay.open{display:flex;}
+  .settings-modal{background:var(--surface); width:100%; max-width:440px; border:1px solid var(--line);}
+  .settings-modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:2px solid var(--orange); background:var(--navy); color:#fff;
+  }
+  .settings-modal-header h3{font-size:15px;}
+  .settings-close{background:transparent; border:none; color:#fff; font-size:20px; line-height:1; padding:0 4px;}
+  .settings-modal-body{padding:20px;}
+  .settings-modal-hint{font-size:12px; color:var(--ink-soft); margin:0 0 14px;}
+  .add-outlet-form{display:flex; flex-direction:column; gap:10px;}
+  .add-outlet-form input{padding:8px 10px; border:1px solid var(--line); font:inherit; font-size:13px;}
+  .add-outlet-form button{margin-top:4px;}
+</style>
+</head>
+<body>
+
+<header class="blueprint">
+  <div class="wrap">
+    <div>
+      <div class="kicker">SITE PROGRESS DASHBOARD</div>
+      <h1>Portfolio overview</h1>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="back-link" id="addOutletBtn" type="button">+ Add outlet</button>
+      <a class="back-link" href="index.html">← Back to dashboard</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="panel bracketed">
+    <div class="panel-title"><span class="title-left"><span class="tick"></span>Overall portfolio progress</span></div>
+    <div class="aggregate-row">
+      <div class="ring-wrap" id="aggregateRingWrap"></div>
+      <div class="aggregate-stats">
+        <div class="aggregate-stat"><div class="num" id="aggOutlets">—</div><div class="lbl">Outlets tracked</div></div>
+        <div class="aggregate-stat"><div class="num" id="aggItems">—</div><div class="lbl">Checklist items complete</div></div>
+        <div class="aggregate-stat"><div class="num" id="aggPct">—</div><div class="lbl">Combined completion</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="portfolioGrid" class="portfolio-grid"></div>
+  <div id="emptyState" class="empty-state" style="display:none;">No outlets yet — add one below.</div>
+  <div id="errorNote" class="error-note" style="display:none;"></div>
+
+</main>
+
+<div class="settings-overlay" id="addOutletOverlay">
+  <div class="settings-modal">
+    <div class="settings-modal-header">
+      <h3>Add outlet</h3>
+      <button class="settings-close" id="addOutletCloseBtn" type="button">×</button>
+    </div>
+    <div class="settings-modal-body">
+      <p class="settings-modal-hint">Seeded from TOFU G - 1 Utama's current checklist (internal and external items, in order).</p>
+      <div class="add-outlet-form">
+        <input type="text" id="newOutletName" placeholder="Outlet name (e.g. Riverside Mall)">
+        <input type="text" id="newOutletCode" placeholder="Code (optional)">
+        <button class="btn btn-primary" id="addOutletSubmitBtn" type="button">+ Add outlet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const SUPABASE_URL = "https://ybwmhxyiaannlnymoytz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nv5KuSnWyIozyV8ZaGzUVA_Jv2DCVXD";
+const STORAGE_BUCKET = "site-photos";
+const OUTLET_STORAGE_KEY = "tofuDashboardOutletId"; // must match dashboard.html
+
+let supabase = null;
+async function getClient(){
+  if(supabase) return supabase;
+  if(!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return supabase;
+}
+
+/* ---- helpers shared in spirit with dashboard.html ---- */
+function esc(s){
+  return (s ?? "").toString().replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtDate(d){
+  if(!d) return "—";
+  const dt = new Date(d);
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString("en-GB",{day:"numeric", month:"short", year:"numeric"});
+}
+function extractDriveFileId(ref){
+  if(!ref) return null;
+  const patterns = [/\/d\/([a-zA-Z0-9_-]+)/, /[?&]id=([a-zA-Z0-9_-]+)/];
+  for(const p of patterns){ const m = ref.match(p); if(m) return m[1]; }
+  return /^[a-zA-Z0-9_-]{10,}$/.test(ref) ? ref : null;
+}
+function driveThumbnailUrl(ref, size=500){
+  const id = extractDriveFileId(ref);
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${size}` : null;
+}
+function resolvePhotoUrl(row, client){
+  if(row.source === "drive") return driveThumbnailUrl(row.ref || row.url);
+  if(client && row.ref) return client.storage.from(STORAGE_BUCKET).getPublicUrl(row.ref).data.publicUrl;
+  return row.url || row.ref;
+}
+function isItemDone(c){
+  if(c.has_subchecklist) return (c.subitems && c.subitems.length > 0) && c.subitems.every(s => s.checked);
+  return !!c.checked;
+}
+function itemPct(c){
+  if(c.has_subchecklist) return (c.subitems && c.subitems.length) ? Math.round(100 * c.subitems.filter(s=>s.checked).length / c.subitems.length) : 0;
+  return c.checked ? 100 : 0;
+}
+
+/* ---- ring markup ---- */
+function ringSvg(pct, size, stroke){
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - Math.max(0, Math.min(100, pct)) / 100);
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle class="ring-track" cx="${size/2}" cy="${size/2}" r="${r}" stroke-width="${stroke}"></circle>
+      <circle class="ring-fill" cx="${size/2}" cy="${size/2}" r="${r}" stroke-width="${stroke}"
+        style="stroke-dasharray:${c};stroke-dashoffset:${offset};"></circle>
+    </svg>
+    <div class="ring-pct" style="font-size:${Math.round(size*0.2)}px;">${pct}%</div>`;
+}
+
+/* ---- data loading ---- */
+async function loadPortfolio(){
+  const client = await getClient();
+  if(!client) return [];
+  const { data: projects, error: pErr } = await client.from("projects").select("*").order("name");
+  if(pErr) throw pErr;
+  if(!projects || !projects.length) return [];
+
+  const ids = projects.map(p => p.id);
+  const [{ data: checklist, error: cErr }, { data: photos, error: phErr }] = await Promise.all([
+    client.from("checklist_items").select("*").in("project_id", ids),
+    client.from("photos").select("*").in("project_id", ids).order("sort_order"),
+  ]);
+  if(cErr) throw cErr;
+  if(phErr) throw phErr;
+
+  const checklistBy = {};
+  (checklist || []).forEach(c => (checklistBy[c.project_id] ||= []).push(c));
+  const photosBy = {};
+  (photos || []).forEach(p => {
+    const url = resolvePhotoUrl(p, client);
+    if(url) (photosBy[p.project_id] ||= []).push({ url, caption: p.caption });
+  });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const statusUpdates = [];
+  projects.forEach(p => {
+    if(p.status === "behind") p.status = "delayed"; // legacy value
+    if(p.status === "complete") return;
+    const isOverdue = [p.target_live, p.original_target_live].some(d => {
+      if(!d) return false;
+      const dt = new Date(d);
+      return !isNaN(dt) && dt < today;
+    });
+    if(isOverdue && p.status !== "delayed"){
+      p.status = "delayed";
+      statusUpdates.push(p.id);
+    }
+  });
+  if(statusUpdates.length){
+    client.from("projects").update({status:"delayed"}).in("id", statusUpdates)
+      .then(({error}) => { if(error) console.warn("Couldn't auto-update status:", error.message || error); });
+  }
+
+  return projects.map(p => {
+    const items = checklistBy[p.id] || [];
+    const total = items.length;
+    const pct = total ? Math.round(items.reduce((s,c) => s + itemPct(c), 0) / total) : 0;
+    const doneCount = items.filter(isItemDone).length;
+    return { project: p, pct, doneCount, total, photos: photosBy[p.id] || [] };
+  });
+}
+
+/* ---- add outlet (seeded from TOFU G - 1 Utama's current checklist) ---- */
+const TEMPLATE_OUTLET_NAME = "tofu g - 1 utama";
+
+/* Deep-clones a template outlet's sub-items for a new outlet, preserving
+   nested sub-checklists at any depth (but resetting checked state,
+   assignees, and dates — a fresh outlet starts with everything unchecked,
+   unassigned, and with no due/completed dates of its own). show_assignee
+   and show_due_date are copied as explicitly set (or left unset to fall
+   back to their parent's resolved default), same as the source. */
+function cloneTemplateSubitems(subitems){
+  return (subitems || []).map(s => ({
+    label: s.label,
+    checked: false,
+    assignee: null,
+    show_assignee: (s.show_assignee !== undefined && s.show_assignee !== null) ? s.show_assignee : null,
+    due_date: null,
+    completed_date: null,
+    show_due_date: (s.show_due_date !== undefined && s.show_due_date !== null) ? s.show_due_date : null,
+    has_subchecklist: !!s.has_subchecklist,
+    subitems: cloneTemplateSubitems(s.subitems)
+  }));
+}
+
+async function getTemplateChecklist(){
+  const template = portfolio.find(x => (x.project.name || "").trim().toLowerCase() === TEMPLATE_OUTLET_NAME);
+  if(!template) return [];
+  try{
+    const client = await getClient();
+    const { data, error } = await client.from("checklist_items")
+      .select("*").eq("project_id", template.project.id).order("sort_order");
+    if(error) throw error;
+    return (data || []).map((c,i) => ({
+      label: c.label,
+      has_subchecklist: !!c.has_subchecklist,
+      subitems: cloneTemplateSubitems(c.subitems),
+      drive_link: null,
+      list: c.list === "external" ? "external" : "internal",
+      sort_order: i
+    }));
+  }catch(err){
+    console.warn("Couldn't load TOFU G - 1 Utama's checklist as a template:", err.message || err);
+    return [];
+  }
+}
+
+function openAddOutlet(){ document.getElementById("addOutletOverlay").classList.add("open"); }
+function closeAddOutlet(){
+  document.getElementById("addOutletOverlay").classList.remove("open");
+  document.getElementById("newOutletName").value = "";
+  document.getElementById("newOutletCode").value = "";
+}
+
+async function addOutlet(){
+  const nameInput = document.getElementById("newOutletName");
+  const codeInput = document.getElementById("newOutletCode");
+  const name = nameInput.value.trim();
+  if(!name){ alert("Give the outlet a name first."); return; }
+  const btn = document.getElementById("addOutletSubmitBtn");
+  btn.disabled = true;
+  try{
+    const client = await getClient();
+    if(!client) throw new Error("Supabase isn't configured.");
+    const { data, error } = await client.from("projects")
+      .insert({ name, code: codeInput.value.trim() || null, status: "on_track" })
+      .select("id,name,code").single();
+    if(error) throw error;
+
+    const template = await getTemplateChecklist();
+    if(template.length){
+      const rows = template.map((c,i) => {
+        const list = c.list || "internal";
+        return {
+          project_id: data.id, label: c.label, checked: false,
+          has_subchecklist: !!c.has_subchecklist, subitems: c.subitems || [],
+          // A new outlet's PARENT (top-level) tasks start with both the
+          // person icon and the link icon off — either can be turned back on
+          // per item in edit mode. Sub-items keep showing their person icon
+          // and calendar icon (see cloneTemplateSubitems).
+          drive_link: null, list, sort_order: i, show_assignee: false, show_drive_link: false
+        };
+      });
+      const { error: clErr } = await client.from("checklist_items").insert(rows);
+      if(clErr) console.warn("Couldn't seed checklist for new outlet:", clErr.message || clErr);
+    }
+
+    closeAddOutlet();
+    portfolio = await loadPortfolio();
+    renderAggregate();
+    renderGrid();
+  }catch(err){
+    alert("Couldn't add outlet: " + (err.message || err));
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("addOutletBtn").addEventListener("click", openAddOutlet);
+document.getElementById("addOutletCloseBtn").addEventListener("click", closeAddOutlet);
+document.getElementById("addOutletOverlay").addEventListener("click", e => {
+  if(e.target.id === "addOutletOverlay") closeAddOutlet();
+});
+document.getElementById("addOutletSubmitBtn").addEventListener("click", addOutlet);
+
+/* ---- rendering ---- */
+let portfolio = [];
+const galleryIndex = {}; // project id -> current photo index
+
+function galleryHtml(photos, idx, pid){
+  if(!photos.length){
+    return `<div class="gallery" id="gallery-${pid}"><div class="gallery-empty">No photos yet</div></div>`;
+  }
+  const p = photos[idx] || photos[0];
+  return `
+    <div class="gallery" id="gallery-${pid}">
+      <img src="${p.url}" alt="${esc(p.caption || "Site photo")}" loading="lazy">
+      ${photos.length > 1 ? `
+        <button class="gallery-nav prev" data-dir="-1" data-id="${pid}" title="Previous photo">‹</button>
+        <button class="gallery-nav next" data-dir="1" data-id="${pid}" title="Next photo">›</button>
+        <div class="gallery-count">${idx + 1} / ${photos.length}</div>
+      ` : ""}
+    </div>`;
+}
+
+function projectCardHtml(entry){
+  const { project: p, pct, doneCount, total, photos } = entry;
+  const statusLabels = { on_track:"On track", delayed:"Delayed", complete:"Complete" };
+  const statusClass = p.status === "on_track" ? "ok" : (p.status === "complete" ? "complete" : "");
+  const statusLabel = statusLabels[p.status] || "Delayed";
+  return `
+    <div class="project-card" data-id="${p.id}">
+      <div class="project-card-head">
+        <div class="ring-wrap" style="width:76px;height:76px;">${ringSvg(pct, 76, 8)}</div>
+        <div class="project-card-title">
+          <h3>${esc(p.name) || "Untitled outlet"}</h3>
+          <div class="code">${esc(p.code) || "—"}</div>
+          <div class="status-chip ${statusClass}"><span class="dot"></span>${statusLabel}</div>
+        </div>
+      </div>
+      <dl class="project-details">
+        <dt>Construction period</dt><dd>${fmtDate(p.period_start)} – ${fmtDate(p.period_end)}</dd>
+        <dt>Opening date</dt><dd>${fmtDate(p.target_live)}</dd>
+        <dt>Checklist</dt><dd>${doneCount} / ${total} complete</dd>
+      </dl>
+      ${galleryHtml(photos, galleryIndex[p.id] || 0, p.id)}
+      <div class="card-footer">
+        <a class="btn btn-outline" href="index.html" data-open="${p.id}">Open in dashboard →</a>
+      </div>
+    </div>`;
+}
+
+function renderAggregate(){
+  const wrap = document.getElementById("aggregateRingWrap");
+  const totalItems = portfolio.reduce((s,e) => s + e.total, 0);
+  const doneItems = portfolio.reduce((s,e) => s + e.doneCount, 0);
+  const pct = totalItems ? Math.round(portfolio.reduce((s,e) => s + (e.pct * e.total), 0) / totalItems) : 0;
+
+  wrap.innerHTML = ringSvg(pct, 130, 14);
+  document.getElementById("aggOutlets").textContent = portfolio.length;
+  document.getElementById("aggItems").textContent = `${doneItems} / ${totalItems}`;
+  document.getElementById("aggPct").textContent = pct + "%";
+}
+
+function renderGrid(){
+  document.getElementById("portfolioGrid").innerHTML = portfolio.map(projectCardHtml).join("");
+}
+
+document.getElementById("portfolioGrid").addEventListener("click", e => {
+  const openLink = e.target.closest("[data-open]");
+  if(openLink){
+    e.preventDefault();
+    localStorage.setItem(OUTLET_STORAGE_KEY, openLink.dataset.open);
+    window.location.href = "index.html";
+    return;
+  }
+  const navBtn = e.target.closest(".gallery-nav");
+  if(navBtn){
+    const pid = navBtn.dataset.id;
+    const entry = portfolio.find(x => x.project.id === pid);
+    if(!entry || !entry.photos.length) return;
+    const dir = +navBtn.dataset.dir;
+    galleryIndex[pid] = ((galleryIndex[pid] || 0) + dir + entry.photos.length) % entry.photos.length;
+    document.getElementById("gallery-" + pid).outerHTML = galleryHtml(entry.photos, galleryIndex[pid], pid);
+  }
+});
+
+(async function init(){
+  const grid = document.getElementById("portfolioGrid");
+  const empty = document.getElementById("emptyState");
+  const errorNote = document.getElementById("errorNote");
+  try{
+    portfolio = await loadPortfolio();
+  }catch(err){
+    errorNote.textContent = "Couldn't load the portfolio: " + (err.message || err);
+    errorNote.style.display = "block";
+    document.getElementById("aggregateRingWrap").innerHTML = ringSvg(0, 130, 14);
+    return;
+  }
+  if(!portfolio.length){
+    empty.style.display = "block";
+    document.getElementById("aggregateRingWrap").innerHTML = ringSvg(0, 130, 14);
+    document.getElementById("aggOutlets").textContent = "0";
+    document.getElementById("aggItems").textContent = "0 / 0";
+    document.getElementById("aggPct").textContent = "0%";
+    return;
+  }
+  renderAggregate();
+  renderGrid();
+})();
+</script>
+</body>
+</html>
