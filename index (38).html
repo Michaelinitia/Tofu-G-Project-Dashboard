@@ -1,0 +1,3833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site Progress Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:            #F3F1EC;
+    --surface:       #FFFFFF;
+    --ink:           #16202B;
+    --ink-soft:      #4C5A67;
+    --line:          #D8D3C7;
+    --line-soft:     #E7E3D8;
+    --navy:          #1B3A5C;
+    --navy-deep:     #10263D;
+    --orange:        #E15A2D;
+    --steel:         #7C97AE;
+    --green:         #4B7A5B;
+    --amber:         #C68A1E;
+    --suit-red:      #B03A2E;
+    --radius:        2px;
+    --gap:           20px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Inter', -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    /* Belt-and-suspenders: the gantt chart is the one thing on this page
+       with intentionally-wide internal content, and it's meant to stay
+       inside its own scroll box (see .gantt-scroll-outer). This is the
+       final backstop so nothing — now or in a future edit — can ever
+       push the page itself wider than the viewport. */
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{
+    font-family:'Space Grotesk', 'Inter', sans-serif; font-weight:600;
+    letter-spacing:-0.01em; margin:0;
+  }
+  a{color:inherit;}
+  button{cursor:pointer;}
+
+  .blueprint{
+    background-color:var(--navy-deep);
+    background-image:
+      linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+    background-size:28px 28px;
+  }
+
+  .bracketed{position:relative;}
+  .bracketed::before, .bracketed::after{
+    content:""; position:absolute; width:14px; height:14px;
+    border-color:var(--orange); border-style:solid; border-width:0;
+  }
+  .bracketed::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
+  .bracketed::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
+
+  .wrap{max-width:1240px; margin:0 auto; padding:0 28px;}
+
+  /* Edit bar */
+  #editBar{ display:none; position:sticky; top:0; z-index:40; background:var(--navy); color:#fff; border-bottom:2px solid var(--orange); }
+  #editBar.on{display:block;}
+  #editBar .wrap{ display:flex; align-items:center; justify-content:space-between; padding:10px 28px; gap:12px; flex-wrap:wrap; }
+  #editBar .edit-label{font-size:13px; display:flex; align-items:center; gap:8px;}
+  #editBar .edit-label .status-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);}
+  #editBar .actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+  .btn{ font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:2px; border:1px solid transparent; }
+  .btn-primary{background:var(--orange); color:#fff;}
+  .btn-ghost{background:transparent; color:#fff; border-color:rgba(255,255,255,0.35);}
+  .btn-ghost:hover{border-color:#fff;}
+  .btn-outline{background:transparent; color:var(--navy); border-color:var(--line);}
+  .btn-outline:hover{border-color:var(--navy);}
+
+  .edit-toggle{
+    background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.25);
+    font-size:12px; font-weight:600; padding:8px 14px; display:inline-flex; align-items:center; gap:6px;
+  }
+  .edit-toggle:hover{border-color:rgba(255,255,255,0.5);}
+
+  /* Header */
+  header.blueprint{padding:36px 0 30px;}
+  .header-row{display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap;}
+  .kicker{color:var(--steel); font-size:12.5px; letter-spacing:0.02em; margin-bottom:8px;}
+  .project-title{color:#fff; font-size:32px; line-height:1.15;}
+  .project-title-input{
+    font-family:'Space Grotesk', sans-serif; font-size:28px; font-weight:600;
+    background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.3);
+    padding:6px 10px; width:100%; max-width:520px;
+  }
+  .project-sub{color:rgba(255,255,255,0.6); font-size:14px; margin-top:6px;}
+  .status-pill{
+    display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,0.25);
+    color:#fff; font-size:12.5px; padding:6px 12px; border-radius:20px; margin-top:14px;
+  }
+  .status-dot{width:7px; height:7px; border-radius:50%; background:var(--orange);}
+  .status-pill.ok .status-dot{background:#7ED08C;}
+  .status-pill.complete .status-dot{background:var(--steel);}
+  .status-select{
+    margin-top:14px; background:rgba(255,255,255,0.08); color:#fff;
+    border:1px solid rgba(255,255,255,0.3); font-size:12.5px; padding:6px 10px;
+  }
+
+  .header-right{display:flex; flex-direction:column; align-items:flex-end; gap:12px;}
+  .hero-stats{display:flex; gap:14px;}
+  .stat-box{ background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); padding:16px 22px; min-width:120px; }
+  .stat-box .num{font-family:'Space Grotesk', sans-serif; font-size:30px; font-weight:700; color:#fff;}
+  .stat-box.actual .num{color:var(--orange);}
+  .stat-box .lbl{font-size:11.5px; color:rgba(255,255,255,0.55); margin-top:4px;}
+
+  /* Layout */
+  main{padding:30px 0 60px; overflow-x:hidden;}
+  /* minmax(0, 1fr), not plain 1fr: a bare 1fr track defaults to
+     minmax(auto, 1fr), and "auto" here means the track won't shrink
+     below the min-content size of whatever's inside it — which is
+     exactly what let the gantt chart's internal (intentionally wide,
+     scrollable) content push this column, and the whole page, wider
+     than the viewport. minmax(0, 1fr) removes that content-based floor
+     so the column — and everything sitting inside it — is capped to
+     the space the grid actually has, same as the left 300px column. */
+  .grid{display:grid; grid-template-columns: 300px minmax(0, 1fr); gap:var(--gap);}
+  .grid > div{min-width:0;}
+  @media (max-width: 880px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{background:var(--surface); border:1px solid var(--line); padding:22px; overflow-x:hidden;}
+  .panel + .panel{margin-top:var(--gap);}
+  .panel-title{
+    font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line-soft);
+  }
+  .panel-title .title-left{display:flex; align-items:center; gap:8px;}
+  .panel-title .tick{width:8px; height:8px; background:var(--orange); flex:none;}
+  .sticky-note-btn{
+    background:none; border:1px solid var(--line); border-radius:4px; font-size:14px;
+    padding:4px 8px; line-height:1; color:var(--ink-soft);
+  }
+  .sticky-note-btn:hover{border-color:var(--orange); color:var(--orange);}
+
+  #stickyNotesLayer{position:absolute; top:0; left:0; width:0; height:0; overflow:visible; z-index:500;}
+  .sticky-note{
+    position:absolute; width:190px; background:var(--sticky-color, #FFF6A8);
+    box-shadow:0 6px 16px rgba(0,0,0,0.25); border-radius:2px; padding:0;
+    display:flex; flex-direction:column;
+  }
+  .sticky-note-handle{
+    cursor:grab; padding:6px 8px; display:flex; justify-content:flex-end;
+    background:rgba(0,0,0,0.06);
+  }
+  .sticky-note-handle:active{cursor:grabbing;}
+  .sticky-note-del{
+    background:none; border:none; font-size:13px; line-height:1; color:rgba(0,0,0,0.55); padding:0 2px;
+  }
+  .sticky-note-del:hover{color:#000;}
+  .sticky-note textarea{
+    border:none; background:transparent; resize:vertical; font-family:inherit; font-size:12.5px;
+    padding:8px 10px 10px; min-height:90px; color:#3a3320; outline:none;
+  }
+
+  /* Info table (read view) */
+  .info-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  .info-table tr{border-bottom:1px solid var(--line-soft);}
+  .info-table tr:last-child{border-bottom:none;}
+  .info-table td{padding:9px 0; vertical-align:top;}
+  .info-table td:first-child{color:var(--ink-soft); width:44%;}
+  .info-table td:last-child{font-weight:500; text-align:right;}
+
+  /* Generic field + edit-row styles */
+  .field-row{margin-bottom:12px;}
+  .field-row label{font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:4px;}
+  .field-row input, .field-row select{ width:100%; padding:7px 9px; border:1px solid var(--line); font:inherit; font-size:13px; }
+
+  .edit-row{display:flex; gap:6px; align-items:center; margin-bottom:8px;}
+  .edit-row input, .edit-row select, .edit-row textarea{
+    border:1px solid var(--line); padding:6px 8px; font:inherit; font-size:12.5px; flex:1; min-width:0;
+  }
+  .edit-row textarea{resize:vertical; min-height:52px;}
+  .edit-row .w-name{flex:1.6;}
+  .edit-row .w-num{flex:0.6;}
+  .row-del{
+    background:none; border:1px solid var(--line); color:var(--orange);
+    font-size:14px; width:26px; height:26px; flex:none; line-height:1;
+  }
+  .reorder-btns{display:flex; flex-direction:column; gap:2px; flex:none;}
+  .row-move-btn{
+    background:none; border:1px solid var(--line); color:var(--ink-soft);
+    font-size:9px; width:20px; height:15px; flex:none; line-height:1; padding:0;
+  }
+  .row-move-btn:hover:not(:disabled){border-color:var(--navy); color:var(--navy);}
+  .row-move-btn:disabled{opacity:0.3; cursor:default;}
+  .add-row-btn{
+    font-size:12px; color:var(--navy); background:none; border:1px dashed var(--line);
+    padding:7px 10px; width:100%; margin-top:2px;
+  }
+  .add-row-btn:hover{border-color:var(--navy);}
+  /* Sub-item edit rows (a checklist item's own sub-checklist, in edit mode)
+     reuse the same button look as the top-level rows above. */
+  .sub-row-del{
+    background:none; border:1px solid var(--line); color:var(--orange);
+    font-size:14px; width:24px; height:24px; flex:none; line-height:1;
+  }
+  .sub-row-move-btn{
+    background:none; border:1px solid var(--line); color:var(--ink-soft);
+    font-size:9px; width:18px; height:14px; flex:none; line-height:1; padding:0;
+  }
+  .sub-row-move-btn:hover:not(:disabled){border-color:var(--navy); color:var(--navy);}
+  .sub-row-move-btn:disabled{opacity:0.3; cursor:default;}
+  .add-sub-row-btn{
+    font-size:11px; color:var(--navy); background:none; border:1px dashed var(--line);
+    padding:5px 8px; margin:2px 0 0 14px; align-self:flex-start; cursor:pointer;
+  }
+  .add-sub-row-btn:hover{border-color:var(--navy);}
+
+  /* Timeline (read view) */
+  .timeline{position:relative; padding-left:2px;}
+  .tl-item{position:relative; padding:0 0 20px 22px; border-left:2px solid var(--line);}
+  .tl-item:last-child{border-color:transparent; padding-bottom:0;}
+  .tl-item::before{
+    content:""; position:absolute; left:-6px; top:2px; width:10px; height:10px; border-radius:50%;
+    background:var(--surface); border:2px solid var(--steel);
+  }
+  .tl-item.done::before{background:var(--green); border-color:var(--green);}
+  .tl-item.active::before{background:var(--orange); border-color:var(--orange);}
+  .tl-item .tl-date{font-size:11.5px; color:var(--ink-soft);}
+  .tl-item .tl-name{font-size:13.5px; font-weight:600; margin-top:2px;}
+
+  /* Parties (read view) */
+  .party{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px; gap:10px; }
+  .party:last-child{border-bottom:none;}
+  .party-role{color:var(--ink-soft); font-size:11.5px;}
+  .party-name{font-weight:600; margin-top:2px;}
+
+  /* Progress panels */
+  .overall-row{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .overall-pct{
+    font-family:'Space Grotesk', sans-serif; font-size:32px; font-weight:700; color:var(--orange); flex:none;
+    min-width:70px;
+  }
+  .overall-bar-track{flex:1; min-width:140px; height:10px; background:var(--line-soft); position:relative;}
+  .overall-bar-fill{height:100%; background:var(--orange); width:0%; transition:width 0.2s ease;}
+  .overall-count{font-size:12px; color:var(--ink-soft); flex:none;}
+
+  /* ---------------------------------------------------------------
+     GANTT CHART — sits between "Overall project completion" and
+     "Discussion board". Collapsible via the chevron in its title bar
+     (session-only UI state, same convention as sub-checklist collapse).
+     Read-only view: a scaled day-based bar chart, one row per task,
+     with a sticky label column, a month ruler, a "today" marker, and
+     SVG dependency arrows drawn between linked bars. Edit view swaps
+     in a row-based editor (dates, progress, dependencies) the same
+     way the Schedule/Checklist panels swap to their edit rows.
+  --------------------------------------------------------------- */
+  .gantt-panel .panel-title{cursor:pointer; user-select:none;}
+  .gantt-panel .panel-title:hover{color:var(--orange);}
+  .gantt-collapse-icon{
+    background:transparent; border:none; padding:0; margin:0; width:16px; height:16px; flex:none;
+    display:inline-flex; align-items:center; justify-content:center; color:var(--ink-soft);
+    font-size:12px; line-height:1; transition:transform 0.15s ease;
+  }
+  .gantt-collapse-icon.is-open{transform:rotate(90deg);}
+  .gantt-body{margin-top:14px;}
+  .gantt-body.is-collapsed{display:none;}
+  .gantt-toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .gantt-empty{font-size:13px; color:var(--ink-soft);}
+
+  .gantt-legend{display:flex; gap:16px; flex-wrap:wrap; font-size:11px; color:var(--ink-soft); margin-bottom:10px;}
+  .gantt-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .gantt-legend i{width:10px; height:10px; display:inline-block; flex:none; border-radius:1px;}
+
+  /* Scroll row — the chart itself is capped to the panel's own width via
+     flex:1 + min-width:0 on the scroll track (the classic flexbox fix:
+     without min-width:0 a flex child won't shrink below its content
+     size, which is exactly the overflow this is meant to prevent); the
+     prev/next arrows (reusing .tabs-nav from the photo-week carousel)
+     only appear once the chart is actually wider than that. */
+  .gantt-scroll-row{display:flex; align-items:center; gap:6px; max-width:100%;}
+  .gantt-scroll-outer{
+    overflow-x:auto; overflow-y:hidden; border:1px solid var(--line-soft); background:#fff;
+    flex:1; min-width:0; max-width:100%;
+  }
+  .gantt-grid{display:flex; align-items:stretch;}
+  .gantt-grid-labels{
+    width:172px; flex:none; position:sticky; left:0; z-index:3; background:#fff;
+    border-right:1px solid var(--line); box-shadow:2px 0 6px -4px rgba(0,0,0,0.25);
+  }
+  .gantt-grid-labels .gantt-ruler-spacer{border-bottom:1px solid var(--line-soft); box-sizing:border-box;}
+  .gantt-row-label{
+    height:36px; display:flex; align-items:center; gap:6px; padding:0 10px; font-size:12px;
+    border-bottom:1px solid var(--line-soft); white-space:nowrap; overflow:hidden;
+  }
+  .gantt-row-label .gr-src{flex:none; font-size:11px;}
+  .gantt-row-label .gr-text{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .gantt-grid-plot{flex:none; position:relative;}
+  /* Two-tier ruler: month strip on top, week strip (with each week's own
+     date range) below it — see ganttMonthRulerHtml/ganttWeekRulerHtml. */
+  .gantt-ruler{position:relative; border-bottom:1px solid var(--line-soft); box-sizing:border-box;}
+  .gantt-ruler-month{
+    position:absolute; top:0; display:flex; align-items:center; padding-left:6px; box-sizing:border-box;
+    font-size:10px; font-weight:700; color:#fff; border-right:2px solid rgba(255,255,255,0.55);
+    text-shadow:0 1px 1px rgba(0,0,0,0.25); overflow:hidden; white-space:nowrap;
+  }
+  .gantt-ruler-month:last-of-type{border-right:none;}
+  .gantt-ruler-week{
+    position:absolute; display:flex; align-items:center; justify-content:center; box-sizing:border-box;
+    font-size:9.5px; color:var(--ink-soft); border-left:1px solid var(--line-soft); overflow:hidden; white-space:nowrap;
+  }
+  .gantt-week-gridline{position:absolute; top:0; bottom:0; width:1px; background:rgba(0,0,0,0.05);}
+  .gantt-row-track{position:absolute; left:0; right:0; height:36px; border-bottom:1px solid var(--line-soft);}
+  .gantt-row-track:nth-child(odd){background:rgba(0,0,0,0.012);}
+  .gantt-today-line{position:absolute; top:0; bottom:0; width:1px; background:var(--orange); opacity:0.6;}
+  .gantt-today-line::before{
+    content:"Today"; position:absolute; top:2px; left:3px; font-size:9px; color:var(--orange);
+    font-weight:600; white-space:nowrap;
+  }
+  .gantt-bar{
+    position:absolute; height:22px; border-radius:2px; display:flex; align-items:center;
+    overflow:hidden; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08); min-width:6px;
+  }
+  .gantt-bar-fill{position:absolute; left:0; top:0; bottom:0; background:rgba(0,0,0,0.22);}
+  .gantt-bar-label{position:relative; font-size:10.5px; color:#fff; padding:0 6px; white-space:nowrap; overflow:hidden; font-weight:600;}
+  .gantt-bar-nodate{
+    position:absolute; height:22px; display:flex; align-items:center; padding:0 8px; font-size:10.5px;
+    color:var(--ink-soft); border:1px dashed var(--line); border-radius:2px; background:rgba(0,0,0,0.02); white-space:nowrap;
+  }
+  .gantt-deps-svg{position:absolute; inset:0; pointer-events:none;}
+
+  /* Edit view — one row per gantt task */
+  .gantt-edit-row{border:1px solid var(--line-soft); padding:10px 12px; margin-bottom:10px;}
+  .gantt-edit-row .row-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .gantt-edit-row .row-order{display:flex; flex-direction:column; gap:2px; flex:none;}
+  .gantt-edit-row .row-order button{
+    width:18px; height:14px; font-size:8px; line-height:1; padding:0; border:1px solid var(--line);
+    background:#fff; color:var(--ink-soft); display:flex; align-items:center; justify-content:center;
+  }
+  .gantt-edit-row .row-order button:disabled{opacity:0.3; cursor:default;}
+  .gantt-edit-row .gr-source-tag{
+    font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; padding:3px 7px;
+    border-radius:10px; flex:none; color:#fff;
+  }
+  .gantt-edit-row .gr-source-tag.src-checklist{background:var(--navy);}
+  .gantt-edit-row .gr-source-tag.src-milestone{background:var(--orange);}
+  .gantt-edit-row .gr-source-tag.src-custom{background:var(--steel);}
+  .gantt-edit-row .gr-label-input{flex:1; min-width:140px; font:inherit; font-size:13px; border:1px solid var(--line); padding:6px 8px;}
+  .gantt-edit-row .gr-label-fixed{flex:1; min-width:140px; font-size:13px; font-weight:600; padding:6px 0;}
+  .gantt-edit-row .gr-fields{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; align-items:center;}
+  .gantt-edit-row .gr-field{display:flex; flex-direction:column; gap:3px;}
+  .gantt-edit-row .gr-field label{font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.03em;}
+  .gantt-edit-row .gr-field input[type="date"], .gantt-edit-row .gr-field input[type="number"]{
+    font:inherit; font-size:12.5px; border:1px solid var(--line); padding:5px 7px; width:120px;
+  }
+  .gantt-edit-row .gr-field .gr-color-row{display:flex; align-items:center; gap:4px;}
+  .gantt-edit-row .gr-field input[type="color"]{
+    border:1px solid var(--line); width:36px; height:28px; padding:2px; background:#fff; cursor:pointer;
+  }
+  .gantt-color-reset{
+    background:transparent; border:1px solid var(--line); width:24px; height:24px; border-radius:2px;
+    font-size:12px; color:var(--ink-soft); padding:0; display:flex; align-items:center; justify-content:center;
+  }
+  .gantt-color-reset:hover{border-color:var(--navy); color:var(--navy);}
+  .gantt-edit-row .gr-progress-readout{font-size:12.5px; color:var(--ink-soft); padding:5px 0;}
+  .gantt-deps-toggle{
+    background:transparent; border:1px solid var(--line); color:var(--ink); font-size:11.5px;
+    padding:5px 9px; border-radius:2px;
+  }
+  .gantt-deps-toggle:hover{border-color:var(--navy);}
+  .gantt-deps-panel{display:none; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-soft);}
+  .gantt-deps-panel.is-open{display:block;}
+  .gantt-deps-panel .deps-hint{font-size:11px; color:var(--ink-soft); margin-bottom:6px;}
+  .gantt-deps-panel label.inline{
+    font-size:12px; display:flex; align-items:center; gap:6px; padding:3px 0;
+  }
+  .gantt-add-row{
+    display:flex; align-items:center; gap:8px; padding:2px 0;
+  }
+  .gantt-row-del{margin-left:auto;}
+
+  /* Discussion board — replaces the old category bar chart, same footprint */
+  .discussion-wrap{display:flex; gap:14px; height:430px;}
+  .discussion-board{
+    flex:1; position:relative; border:1px dashed var(--line); border-radius:2px; overflow:hidden;
+    background:var(--bg);
+  }
+  .discussion-board.drag-over{border-color:var(--orange); background:rgba(225,90,45,0.06);}
+  .discussion-board-empty{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:var(--ink-soft); text-align:center; padding:20px; pointer-events:none;
+  }
+  .discussion-piles{width:98px; flex:none; display:flex; flex-direction:column; gap:10px;}
+  .discussion-pile{
+    flex:1; border-radius:2px; cursor:grab; user-select:none; color:#fff; position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.22);
+  }
+  .discussion-pile:active{cursor:grabbing;}
+  .discussion-pile .pile-suit{font-size:19px; line-height:1;}
+  .discussion-pile .pile-label{font-family:'Space Grotesk', sans-serif; font-size:9.5px; font-weight:700; letter-spacing:0.05em;}
+  .discussion-pile.spades{background:var(--navy-deep);}
+  .discussion-pile.diamonds{background:var(--suit-red);}
+  .discussion-pile.clubs{background:var(--ink);}
+  .discussion-card{
+    /* Same proportions as a poker card (2.5in : 3.5in); default size is
+       double the original card footprint. */
+    position:absolute; width:256px; border-radius:2px; box-shadow:0 5px 14px rgba(0,0,0,0.24);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .discussion-card-header{
+    /* Twice the original header size (font, padding, gap, close button) —
+       letter-spacing is in em so it scales automatically with font-size. */
+    font-family:'Space Grotesk', sans-serif; font-size:19px; font-weight:700; letter-spacing:0.04em; color:#fff;
+    padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:grab;
+  }
+  .discussion-card-header:active{cursor:grabbing;}
+  .discussion-card-del{background:none; border:none; color:rgba(255,255,255,0.85); font-size:24px; line-height:1; padding:0; flex:none;}
+  .discussion-card-del:hover{color:#fff;}
+  .discussion-card.spades .discussion-card-header{background:var(--navy-deep);}
+  .discussion-card.diamonds .discussion-card-header{background:var(--suit-red);}
+  .discussion-card.clubs .discussion-card-header{background:var(--ink);}
+  .discussion-card.spades{background:#EEF1F6;}
+  .discussion-card.diamonds{background:#FBEAE7;}
+  .discussion-card.clubs{background:#ECEDEF;}
+  .discussion-card textarea{
+    /* Same resize behaviour as sticky notes — a drag handle in the
+       bottom-right corner lets the user grow it taller. */
+    border:none; background:transparent; resize:vertical; font-family:inherit; font-size:12px;
+    padding:8px 9px 9px; min-height:330px; color:var(--ink); outline:none; flex:1;
+  }
+  .discussion-card-ghost{opacity:0.85;}
+
+
+  /* Checklist */
+  .check-list{display:flex; flex-direction:column; gap:14px;}
+  .checklist-columns{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:24px;}
+  .checklist-view-toggle{display:flex; gap:6px; margin-bottom:16px;}
+  .checklist-view-btn{
+    font-family:inherit; font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px;
+    border:1px solid var(--line); background:transparent; color:var(--ink-soft); cursor:pointer;
+  }
+  .checklist-view-btn:hover{border-color:var(--navy); color:var(--navy);}
+  .checklist-view-btn.is-active{background:var(--navy); border-color:var(--navy); color:#fff;}
+  .checklist-columns.view-internal .checklist-column[data-list="external"],
+  .checklist-columns.view-external .checklist-column[data-list="internal"]{display:none;}
+  .checklist-column-title{
+    font-family:'Space Grotesk', 'Inter', sans-serif; font-weight:600; font-size:11px; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--steel); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--line-soft);
+  }
+  .check-block{}
+  .check-item{display:flex; align-items:center; gap:10px; font-size:13.5px; flex-wrap:wrap;}
+  .check-item input[type="checkbox"]{width:16px; height:16px; accent-color:var(--orange); flex:none;}
+  .check-item .check-label{flex:1; min-width:150px;}
+  .check-item.is-checked .check-label{color:var(--ink-soft); text-decoration:line-through;}
+  .check-item select{border:1px solid var(--line); padding:5px 8px; font:inherit; font-size:12.5px; min-width:170px; background:#fff;}
+  .check-ring{display:inline-flex; flex:none;}
+  .check-ring svg{display:block; transform:rotate(-90deg);}
+  .check-ring .ring-track{fill:none; stroke:var(--line-soft);}
+  .check-ring .ring-fill{fill:none; stroke:var(--green); stroke-linecap:round; transition:stroke-dashoffset 0.3s ease;}
+  .check-collapse-btn{
+    background:transparent; border:none; padding:0; margin:0; width:14px; height:14px; flex:none;
+    display:inline-flex; align-items:center; justify-content:center; color:var(--ink-soft);
+    font-size:11px; line-height:1; cursor:pointer; transition:transform 0.15s ease;
+  }
+  .check-collapse-btn.is-open{transform:rotate(90deg);}
+  .check-collapse-btn:hover{color:var(--ink);}
+  .sub-check-list{margin:6px 0 0 0; display:flex; flex-direction:column; gap:10px;} /* flush left, so sub-item icons/checkbox line up under the parent row's own icons */
+  .sub-check-list.is-collapsed{display:none;}
+  .sub-check-list .check-item{font-size:12.5px;}
+  .sub-check-list .check-item input[type="checkbox"]{width:16px; height:16px;}
+  .check-note-line{font-size:11.5px; margin-left:26px; margin-top:2px; color:var(--ink-soft); font-style:italic;}
+
+  /* Category (sub-checklist) header row: a calendar icon (due date),
+     the green completion ring, then the label with its dropdown-style
+     collapse chevron right beside it, then (on the far right, via
+     rightIconHtml/icon-slot-right) the link icon. */
+  .check-item.parent-derived{gap:12px; padding:2px 0;}
+  .check-header-icon{width:22px; display:inline-flex; align-items:center; justify-content:center; flex:none;}
+  .check-label-group{display:inline-flex; align-items:center; gap:6px; flex:1; min-width:150px;}
+  .check-label-group .check-label{flex:none; min-width:0;}
+  .check-item.parent-derived .check-label-group .check-label{
+    font-family:'Space Grotesk','Inter',sans-serif; font-weight:600; font-size:14.5px;
+  }
+  .check-item.parent-derived .check-collapse-btn{width:16px; height:16px; font-size:12px;}
+
+  /* Sub-item rows: the avatar slot is the SAME width as the parent's
+     calendar slot above (22px), and the gap between it and the checkbox
+     matches the parent row's gap (12px) — so a sub-item's person icon
+     lines up under the parent's calendar icon, and its checkbox lines up
+     under the parent's completion ring. */
+  .sub-check-list .icon-slot-assignee{width:22px;}
+  .sub-check-list .check-item{gap:12px;}
+
+  /* Right-side icon column — the link icon (parent/top-level items) and
+     the calendar icon (sub-items) both sit in this fixed-width slot as the
+     last flex child; since .check-label above has flex:1, the slot is
+     always pushed flush to the row's right edge, so link and calendar
+     icons land in the same vertical column across every row. */
+  .icon-slot-right{width:22px; display:inline-flex; align-items:center; justify-content:center; flex:none; margin-left:6px;}
+
+  /* Calendar icon — sub-checklist items only. Default ink/black while the
+     item is open or has no deadline; green once completed by the
+     deadline; red if completed after it (see dueDateStatus()). */
+  .due-date-widget{position:relative; display:inline-flex; align-items:center; flex:none;}
+  .due-date-icon{background:none; border:none; padding:0; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;}
+  .due-date-menu{
+    display:none; position:absolute; top:24px; right:0; z-index:60; min-width:160px;
+    background:#fff; border:1px solid var(--line); border-radius:2px; box-shadow:0 8px 18px rgba(0,0,0,0.2);
+    padding:8px;
+  }
+  .due-date-menu.is-open{display:block;}
+  .due-date-menu input[type="date"]{font:inherit; font-size:12px; border:1px solid var(--line); padding:5px 6px; width:100%;}
+  .due-date-menu .due-date-clear{
+    display:block; width:100%; text-align:left; background:none; border:none; padding:6px 0 0;
+    font:inherit; font-size:11px; color:var(--ink-soft); text-decoration:underline; cursor:pointer;
+  }
+
+  /* Link icon — parent/top-level items only. Replaces the old plain-text
+     "available here" line: click the icon to open a popover where the URL
+     can be set, changed, opened, or cleared. Muted when no URL is set yet;
+     navy once one is. */
+  .link-widget{position:relative; display:inline-flex; align-items:center; flex:none;}
+  .link-icon{background:none; border:none; padding:0; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;}
+  .link-menu{
+    display:none; position:absolute; top:24px; right:0; z-index:60; min-width:200px;
+    background:#fff; border:1px solid var(--line); border-radius:2px; box-shadow:0 8px 18px rgba(0,0,0,0.2);
+    padding:8px;
+  }
+  .link-menu.is-open{display:block;}
+  .link-menu input[type="url"]{font:inherit; font-size:12px; border:1px solid var(--line); padding:5px 6px; width:100%;}
+  .link-menu .link-menu-row{display:flex; justify-content:space-between; align-items:center; margin-top:6px;}
+  .link-menu .link-open{font-size:11px; color:var(--navy); text-decoration:underline;}
+  .link-menu .link-clear{
+    background:none; border:none; padding:0; font:inherit; font-size:11px; color:var(--ink-soft);
+    text-decoration:underline; cursor:pointer;
+  }
+
+  /* Icon column — the person icon sits in a fixed-width slot to the left
+     of the checkbox/collapse-button on sub-items, so icons line up in a
+     consistent vertical column regardless of label length. Parent
+     (top-level) items don't reserve this space — see checklistItemHtml —
+     so their own checkbox sits flush left, further left than sub-items'. */
+  .check-icons{display:inline-flex; align-items:center; gap:2px; flex:none;}
+  .icon-slot-assignee{width:24px; display:inline-flex; align-items:center; justify-content:center; flex:none;}
+
+  /* Assignee icon + dropdown, shown on internal checklist items. The
+     assigned name is hidden by default and only appears in a small
+     tooltip on hover (see .assignee-widget[data-name]:hover::after). The
+     icon itself is a CSS-drawn avatar silhouette (head + shoulders,
+     clipped to the circle) — gray outline when unassigned, solid green
+     with a white silhouette once someone is assigned. */
+  .assignee-widget{position:relative; display:inline-flex; align-items:center; flex:none;}
+  .assignee-icon{
+    width:19px; height:19px; border-radius:50%; border:1px solid var(--line); background:#fff;
+    padding:0; position:relative; overflow:hidden;
+  }
+  .assignee-icon::before{ /* head */
+    content:""; position:absolute; width:7px; height:7px; border-radius:50%; background:var(--ink-soft);
+    top:3px; left:50%; transform:translateX(-50%);
+  }
+  .assignee-icon::after{ /* shoulders */
+    content:""; position:absolute; width:15px; height:15px; border-radius:50%; background:var(--ink-soft);
+    top:11px; left:50%; transform:translateX(-50%);
+  }
+  .assignee-icon.is-assigned{background:var(--green); border-color:var(--green);}
+  .assignee-icon.is-assigned::before, .assignee-icon.is-assigned::after{background:#fff;}
+  /* Tooltip lives on the wrapper (not the icon itself) since the icon has
+     overflow:hidden to clip the avatar shape, which would clip the tooltip
+     too if it were generated there. */
+  .assignee-widget[data-name]:hover::after{
+    content:attr(data-name); position:absolute; bottom:24px; left:0;
+    border-radius:2px; background:var(--ink); color:#fff; font-size:10.5px; font-weight:600;
+    padding:3px 7px; white-space:nowrap; pointer-events:none; box-shadow:0 4px 10px rgba(0,0,0,0.25); z-index:70;
+  }
+  .assignee-menu{
+    display:none; position:absolute; top:24px; left:0; z-index:60; min-width:132px;
+    background:#fff; border:1px solid var(--line); border-radius:2px; box-shadow:0 8px 18px rgba(0,0,0,0.2);
+    overflow:hidden;
+  }
+  .assignee-menu.is-open{display:block;}
+  .assignee-menu-option{
+    display:block; width:100%; text-align:left; background:none; border:none; padding:7px 10px;
+    font:inherit; font-size:12px; color:var(--ink); cursor:pointer;
+  }
+  .assignee-menu-option:hover{background:var(--line-soft);}
+  .assignee-menu-option.is-selected{font-weight:700; color:var(--navy);}
+  .checklist-edit{margin-top:16px; padding-top:16px; border-top:1px solid var(--line-soft);}
+  .check-edit-row{border:1px solid var(--line-soft); padding:10px; margin-bottom:8px;}
+  .check-edit-row .row-top{display:flex; gap:6px; align-items:center; margin-bottom:6px;}
+  .check-edit-row .row-top input[type="text"]{flex:1; border:1px solid var(--line); padding:6px 8px; font:inherit; font-size:12.5px;}
+  .check-edit-row label.inline{font-size:11.5px; color:var(--ink-soft); display:flex; align-items:center; gap:5px; white-space:nowrap;}
+  .check-edit-row textarea{
+    width:100%; font:inherit; font-size:12px; border:1px solid var(--line); padding:6px 8px; min-height:50px; margin-top:6px;
+  }
+  .check-edit-row input.drive-link-field{
+    width:100%; font:inherit; font-size:12px; border:1px solid var(--line); padding:6px 8px; margin-top:6px;
+  }
+  .check-edit-row .options-hint{font-size:10.5px; color:var(--ink-soft); margin-top:3px;}
+  .field-hint{font-size:10.5px; color:var(--ink-soft); margin-top:3px; display:block;}
+
+  /* Sub-item edit rows — a checklist item's own sub-checklist, editable
+     in place (label, its own optional sub-checklist, show/hide person
+     icon). Nested one level further: a sub-item's own sub-checklist is
+     edited as a plain one-per-line list (see .sub-edit-row textarea). */
+  .sub-edit-list{margin:6px 0 8px; display:flex; flex-direction:column; gap:6px;}
+  .sub-edit-row{border:1px solid var(--line-soft); background:var(--bg); padding:8px; margin-left:14px;}
+  .sub-edit-row .row-top{display:flex; gap:6px; align-items:center; margin-bottom:4px;}
+  .sub-edit-row .row-top input[type="text"]{flex:1; border:1px solid var(--line); padding:5px 7px; font:inherit; font-size:12px;}
+  .sub-edit-row label.inline{font-size:11px; color:var(--ink-soft); display:flex; align-items:center; gap:5px; white-space:nowrap;}
+  .sub-edit-row textarea{width:100%; font:inherit; font-size:11.5px; border:1px solid var(--line); padding:5px 7px; min-height:40px; margin-top:4px;}
+  .sub-edit-row .options-hint{font-size:10px; color:var(--ink-soft); margin-top:3px;}
+
+  /* Party row ordering */
+  .row-order{display:flex; flex-direction:column; gap:2px; flex:none;}
+  .row-order button{
+    background:none; border:1px solid var(--line); color:var(--navy);
+    width:22px; height:13px; font-size:9px; line-height:1; padding:0;
+  }
+  .row-order button:disabled{opacity:0.3; cursor:default;}
+
+
+  /* Notes */
+  .notes-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+  @media (max-width: 700px){ .notes-grid{grid-template-columns:1fr;} }
+  .note-card h4{font-size:13px; font-weight:600; margin-bottom:8px;}
+  .note-card ul{margin:0; padding-left:16px; font-size:13px; color:var(--ink-soft);}
+  .note-card li{margin-bottom:5px;}
+
+  /* Photo galleries */
+  .tabs-carousel{ display:flex; align-items:center; gap:6px; margin-bottom:16px; }
+  .tabs{display:flex; gap:4px; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tabs-nav{
+    flex:0 0 auto; width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+    background:none; border:1px solid var(--line); color:var(--ink-soft); font-size:14px; line-height:1;
+    padding:0; cursor:pointer;
+  }
+  .tabs-nav:disabled{ opacity:0.3; cursor:default; }
+  .tabs-nav[hidden]{ display:none; }
+  .tab-btn{ font-family:inherit; font-size:12.5px; font-weight:600; background:none; border:1px solid var(--line); color:var(--ink-soft); padding:8px 16px; white-space:nowrap; }
+  .tab-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .photo-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px;}
+  .photo-tile{position:relative; border:1px solid var(--line); background:#eee;}
+  .photo-tile img{width:100%; height:110px; object-fit:cover; display:block;}
+  .photo-src{ position:absolute; bottom:0; left:0; font-size:9.5px; letter-spacing:0.02em; color:#fff; background:rgba(16,38,61,0.72); padding:2px 6px; }
+  .photo-del{
+    position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%;
+    background:rgba(16,38,61,0.85); color:#fff; border:none; font-size:12px; line-height:20px; text-align:center; padding:0;
+  }
+  .photo-tabset{display:none;}
+  .photo-tabset.active{display:block;}
+  .photo-upload-row{ display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line-soft); flex-wrap:wrap; align-items:center; }
+  .photo-upload-row input[type="text"]{ flex:1; min-width:180px; padding:7px 9px; border:1px solid var(--line); font:inherit; font-size:12.5px; }
+  .tab-wrap{ display:inline-flex; align-items:center; flex:0 0 auto; }
+  .tab-btn .tab-current-dot{ display:inline-block; width:6px; height:6px; border-radius:50%; background:#3aa76d; margin-left:6px; vertical-align:middle; }
+  .tab-btn.active .tab-current-dot{ background:#fff; }
+  .tab-remove{ background:none; border:none; color:inherit; opacity:0.55; margin-left:6px; padding:0; font-size:12px; cursor:pointer; line-height:1; }
+  .tab-remove:hover{ opacity:1; }
+  .add-week-row{ display:none; gap:8px; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid var(--line-soft); font-size:12.5px; flex-wrap:wrap; }
+
+  /* Outlet switcher + settings */
+  .outlet-switcher{display:flex; align-items:center; gap:8px;}
+  .outlet-select{
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 10px; max-width:220px;
+    border-radius:2px; border:1px solid rgba(255,255,255,0.35); background:var(--navy-deep); color:#fff;
+  }
+  .settings-btn{
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:2px;
+    border:1px solid rgba(255,255,255,0.35); background:transparent; color:#fff; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none;
+  }
+  .settings-btn:hover{border-color:#fff;}
+
+  .settings-overlay{
+    display:none; position:fixed; inset:0; z-index:100; background:rgba(16,38,61,0.55);
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .settings-overlay.open{display:flex;}
+  .settings-modal{
+    background:var(--surface); width:100%; max-width:540px; max-height:82vh; overflow:auto;
+    border:1px solid var(--line);
+  }
+  .settings-modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:2px solid var(--orange); background:var(--navy); color:#fff;
+  }
+  .settings-modal-header h3{font-size:15px;}
+  .settings-close{background:transparent; border:none; color:#fff; font-size:20px; line-height:1; padding:0 4px;}
+  .settings-modal-body{padding:20px;}
+  .settings-modal-hint{font-size:12px; color:var(--ink-soft); margin:0 0 14px;}
+  .outlet-row{
+    display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line-soft);
+  }
+  .outlet-row:last-child{border-bottom:none;}
+  .outlet-name-input{flex:1.3; min-width:0; padding:6px 8px; border:1px solid var(--line); font:inherit; font-size:12.5px;}
+  .outlet-code-input{flex:0.7; min-width:0; padding:6px 8px; border:1px solid var(--line); font:inherit; font-size:12.5px;}
+  .outlet-current-tag{
+    font-size:10.5px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.03em;
+    border:1px solid var(--green); padding:4px 6px; border-radius:2px; flex:none; white-space:nowrap;
+  }
+  .outlet-delete-btn{
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:2px;
+    background:transparent; color:var(--orange); border:1px solid var(--orange); flex:none; white-space:nowrap;
+  }
+  .outlet-delete-btn:hover{background:var(--orange); color:#fff;}
+  .settings-add-row{display:flex; gap:8px; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .settings-add-row input{flex:1; min-width:140px; padding:7px 9px; border:1px solid var(--line); font:inherit; font-size:12.5px;}
+  .settings-empty{font-size:13px; color:var(--ink-soft); padding:8px 0;}
+  .file-label{ font-size:12px; padding:7px 12px; border:1px solid var(--line); color:var(--navy); background:#fff; }
+  .file-label input{display:none;}
+  .upload-status{font-size:11.5px; color:var(--ink-soft);}
+
+  footer{text-align:center; font-size:11.5px; color:var(--ink-soft); padding:20px 0 36px;}
+</style>
+</head>
+<body>
+
+<div id="stickyNotesLayer"></div>
+
+<div id="editBar">
+  <div class="wrap">
+    <div class="edit-label"><span class="status-dot"></span>Edit mode — changes save automatically as you go</div>
+    <div class="actions">
+      <span class="upload-status" id="saveStatus"></span>
+      <button class="btn btn-ghost" id="discardBtn">Discard</button>
+      <button class="btn btn-primary" id="saveBtn">Save now</button>
+      <button class="btn btn-ghost" id="exitEditBtn">Exit edit mode</button>
+    </div>
+  </div>
+</div>
+
+<header class="blueprint">
+  <div class="wrap">
+    <div class="header-row">
+      <div>
+        <div class="kicker" id="kicker">WEEKLY PROGRESS &mdash; SITE DASHBOARD</div>
+        <h1 class="project-title" id="projectTitle">Loading project&hellip;</h1>
+        <input class="project-title-input" id="projectTitleInput" style="display:none;" data-field="name">
+        <div class="project-sub" id="projectSub"></div>
+        <div class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusText">Checking status</span></div>
+        <select class="status-select" id="statusSelect" style="display:none;" data-field="status">
+          <option value="on_track">On track</option>
+          <option value="delayed">Delayed</option>
+          <option value="complete">Complete</option>
+        </select>
+      </div>
+      <div class="header-right">
+        <a class="settings-btn" id="overviewLink" href="overview.html" title="View all outlets">◱ Overview</a>
+        <div class="outlet-switcher" id="outletSwitcher" style="display:none;">
+          <select class="outlet-select" id="outletSelect" style="display:none;"></select>
+          <button class="settings-btn" id="settingsBtn" title="Manage outlets">⚙ Outlets</button>
+        </div>
+        <button class="edit-toggle" id="editToggleBtn" style="display:none;">✎ <span id="editToggleLabel">Edit</span></button>
+        <div class="hero-stats bracketed">
+          <div class="stat-box actual"><div class="num" id="actualPct">&mdash;</div><div class="lbl">Overall complete</div></div>
+          <div class="stat-box"><div class="num" id="planPct">&mdash;</div><div class="lbl">Items checked off</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+
+    <!-- LEFT COLUMN -->
+    <div>
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Project information</span></div>
+        <table class="info-table" id="infoTable"></table>
+        <div id="infoEdit" style="display:none;"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Parties engaged</span></div>
+        <div id="partiesList"></div>
+        <div id="partiesEdit" style="display:none;"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Schedule</span></div>
+        <div class="timeline" id="timeline"></div>
+        <div id="timelineEdit" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Overall project completion</span></div>
+        <div class="overall-row">
+          <div class="overall-pct" id="overallPct">0%</div>
+          <div class="overall-bar-track"><div class="overall-bar-fill" id="overallBarFill"></div></div>
+          <div class="overall-count" id="overallCount">0 / 0 items</div>
+        </div>
+      </div>
+
+      <div class="panel gantt-panel">
+        <div class="panel-title" id="ganttPanelTitle" title="Click to expand/collapse">
+          <span class="title-left"><span class="tick"></span>Gantt chart</span>
+          <button type="button" class="gantt-collapse-icon is-open" id="ganttCollapseIcon" title="Toggle gantt chart" aria-expanded="true">▸</button>
+        </div>
+        <div class="gantt-body" id="ganttBody">
+          <div class="gantt-toolbar" id="ganttToolbar" style="display:none;">
+            <button type="button" class="add-row-btn" id="ganttAddFromChecklistBtn">+ From checklist</button>
+            <button type="button" class="add-row-btn" id="ganttAddFromScheduleBtn">+ From schedule</button>
+            <button type="button" class="add-row-btn" id="ganttAddCustomBtn">+ Custom task</button>
+          </div>
+          <div id="ganttReadonly"></div>
+          <div id="ganttEdit" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Discussion board</span></div>
+        <div class="discussion-wrap">
+          <div class="discussion-board" id="discussionBoard">
+            <div class="discussion-board-empty" id="discussionBoardEmpty">Drag a card in from a pile to start a discussion.</div>
+          </div>
+          <div class="discussion-piles">
+            <div class="discussion-pile spades" data-type="spades" title="Drag onto the board to add an approval card">
+              <span class="pile-suit">♠</span><span class="pile-label">APPROVAL</span>
+            </div>
+            <div class="discussion-pile diamonds" data-type="diamonds" title="Drag onto the board to add a purchase card">
+              <span class="pile-suit">♦</span><span class="pile-label">PURCHASE</span>
+            </div>
+            <div class="discussion-pile clubs" data-type="clubs" title="Drag onto the board to add a submission card">
+              <span class="pile-suit">♣</span><span class="pile-label">SUBMISSION</span>
+            </div>
+          </div>
+        </div>
+        <p class="field-hint" style="margin-top:12px;">Drag a card from a pile onto the board, then type on it. Click a card to bring it to the front.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Checklist</span><button type="button" id="addStickyNoteBtn" class="sticky-note-btn" title="Add a sticky note">🗒️</button></div>
+        <div class="checklist-view-toggle" id="checklistViewToggle">
+          <button type="button" class="checklist-view-btn is-active" data-view="overall">Overall</button>
+          <button type="button" class="checklist-view-btn" data-view="internal">Internal</button>
+          <button type="button" class="checklist-view-btn" data-view="external">External</button>
+        </div>
+        <div class="checklist-columns" id="checklist">
+          <div class="checklist-column" data-list="internal">
+            <div class="checklist-column-title">Internal</div>
+            <div class="check-list" id="checklistInternal"></div>
+          </div>
+          <div class="checklist-column" data-list="external">
+            <div class="checklist-column-title">External</div>
+            <div class="check-list" id="checklistExternal"></div>
+          </div>
+        </div>
+        <div id="checklistEdit" class="checklist-edit checklist-columns" style="display:none;">
+          <div class="checklist-column">
+            <div class="checklist-column-title">Internal</div>
+            <div id="checklistEditInternal"></div>
+            <button class="add-row-btn" data-list="internal">+ Add internal item</button>
+          </div>
+          <div class="checklist-column">
+            <div class="checklist-column-title">External</div>
+            <div id="checklistEditExternal"></div>
+            <button class="add-row-btn" data-list="external">+ Add external item</button>
+          </div>
+        </div>
+        <div id="assigneeNamesEdit" class="checklist-edit" style="display:none;">
+          <div class="checklist-column-title">Assignable names (internal checklist)</div>
+          <div id="assigneeNamesEditList"></div>
+          <button class="add-row-btn" id="addAssigneeNameBtn">+ Add name</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Notes</span></div>
+        <div class="notes-grid" id="notesGrid"></div>
+        <div id="notesEdit" style="display:none;"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span class="title-left"><span class="tick"></span>Site photos</span></div>
+        <div class="tabs-carousel">
+          <button class="tabs-nav" id="photoTabsPrev" type="button" aria-label="Scroll weeks left" hidden>‹</button>
+          <div class="tabs" id="photoTabs"></div>
+          <button class="tabs-nav" id="photoTabsNext" type="button" aria-label="Scroll weeks right" hidden>›</button>
+        </div>
+        <div id="photoTabsets"></div>
+        <div class="add-week-row" id="addWeekRow" style="display:none;">
+          <button class="btn btn-outline" id="addWeekBtn">+ Add week</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-modal">
+    <div class="settings-modal-header">
+      <h3>Manage outlets</h3>
+      <button class="settings-close" id="settingsCloseBtn">×</button>
+    </div>
+    <div class="settings-modal-body">
+      <p class="settings-modal-hint">Each outlet is its own site — same tracking, separate data. Switch between them from the dropdown in the header.</p>
+      <div id="outletsList"></div>
+      <div class="settings-add-row">
+        <input type="text" id="newOutletName" placeholder="Outlet name (e.g. Riverside Mall)">
+        <input type="text" id="newOutletCode" placeholder="Code (optional)">
+        <button class="btn btn-primary" id="addOutletBtn">+ Add outlet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>Updated automatically from Supabase &middot; <span id="lastSync">&mdash;</span></footer>
+
+<script type="module">
+/* ================================================================
+   CONFIG
+   Tables: projects, milestones, notes, photos, parties, checklist_items
+   — see schema.sql / new-tables.sql / checklist-upgrade.sql.
+   Category completion and overall project completion are computed
+   client-side from checklist_items — there's no separate table for them.
+================================================================ */
+const SUPABASE_URL = "https://ybwmhxyiaannlnymoytz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nv5KuSnWyIozyV8ZaGzUVA_Jv2DCVXD";
+let PROJECT_ID = "bb300e4c-1340-4fef-803b-fbac12332dac";
+const STORAGE_BUCKET = "site-photos";
+const OUTLET_STORAGE_KEY = "tofuDashboardOutletId";
+const SUPABASE_CONFIGURED = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+const DEFAULT_CHECKLIST = [
+  { label:"Kick off meeting",             has_subchecklist:false },
+  { label:"Design / fit-out briefing",    has_subchecklist:false },
+  { label:"Layout design",                has_subchecklist:true, subitems:[
+      {label:"Layout plan", checked:false}, {label:"3D render", checked:false}, {label:"Detailed drawings", checked:false}
+    ] },
+  { label:"Procurement",                  has_subchecklist:false },
+  { label:"M&E endorsement",              has_subchecklist:true, subitems:[] },
+  { label:"Data point / CCTV layouts",    has_subchecklist:false },
+  { label:"Wifi installation",            has_subchecklist:false },
+  { label:"POS",                          has_subchecklist:false },
+  { label:"Pest control appointment",     has_subchecklist:false },
+  { label:"Operations handover",          has_subchecklist:false },
+].map((c,i) => ({
+  checked:false, subitems:[], drive_link:null, list:"internal", ...c, sort_order:i
+}));
+
+/* Sub-checklists start collapsed whenever a dashboard is (re)loaded —
+   only parent (category) rows show at first; expanding one is purely a
+   local UI choice (_collapsed is never persisted), so it resets to
+   collapsed again next time the outlet is opened. Recurses so a nested
+   sub-checklist starts collapsed too. Mutates in place and returns the
+   same array, so it can be dropped inline wherever a checklist is set. */
+function collapseAllParents(list){
+  (list || []).forEach(item => {
+    if(item.has_subchecklist){
+      item._collapsed = true;
+      collapseAllParents(item.subitems);
+    }
+  });
+  return list;
+}
+
+/* ---------------------------------------------------------------
+   GANTT CHART — seed helpers
+   A gantt task is identified by a client-generated `client_key`
+   (stable across saves, since gantt_tasks — like every other table
+   here — is deleted and reinserted wholesale on save, which would
+   otherwise churn the DB id every time and break dependency links).
+   A task can be tied to a checklist parent item or a schedule
+   milestone (source_type + source_label, matched by label at render
+   time so it always reflects that item's current name/state) or be
+   fully custom (typed and dated by hand, no live link).
+--------------------------------------------------------------- */
+function genGanttKey(){
+  return "g_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+/* Shapes a local gantt task object into the row Supabase expects. */
+function ganttTaskRow(g, projectId){
+  return {
+    project_id: projectId, client_key: g.client_key, label: g.label || "",
+    start_date: g.start_date || null, end_date: g.end_date || null,
+    progress: Math.max(0, Math.min(100, g.progress || 0)),
+    source_type: g.source_type || "custom", source_label: g.source_label || null,
+    depends_on: g.depends_on || [], sort_order: g.sort_order || 0, color: g.color || null,
+  };
+}
+/* First-run seed: one row per top-level checklist item (end date from
+   its due_date if it has one, no start date — the user fills that in)
+   and one per milestone (start = end = the milestone's own date). Only
+   ever called when a project has zero gantt_tasks rows on file. */
+function buildSeedGanttTasks(checklist, milestones, project){
+  const tasks = [];
+  let order = 0;
+  (checklist || []).forEach(c => {
+    tasks.push({
+      client_key: genGanttKey(), label: c.label, start_date: project?.period_start || null,
+      end_date: c.due_date || null, progress: 0, source_type: "checklist", source_label: c.label,
+      depends_on: [], sort_order: order++, color: null,
+    });
+  });
+  (milestones || []).forEach(m => {
+    tasks.push({
+      client_key: genGanttKey(), label: m.name, start_date: m.date || null, end_date: m.date || null,
+      progress: 0, source_type: "milestone", source_label: m.name, depends_on: [], sort_order: order++, color: null,
+    });
+  });
+  return tasks;
+}
+
+/* ---------------------------------------------------------------
+   DEMO DATA — used only if Supabase isn't configured or a fetch fails.
+--------------------------------------------------------------- */
+const DEMO = {
+  project:{
+    name:"Retail Fit-Out — Riverside Mall", code:"RFO-2026-014",
+    period_start:"2026-05-14", period_end:"2026-06-08", target_live:"2026-06-09", original_target_live:"2026-06-09", status:"delayed"
+  },
+  milestones:[
+    {name:"Ground break", date:"2026-05-13", state:"done"},
+    {name:"Finish project", date:"2026-06-04", state:"active"},
+    {name:"Training", date:"2026-06-08", state:"upcoming"},
+    {name:"Target live", date:"2026-06-09", state:"upcoming"},
+  ],
+  notes:[
+    {heading:"Civil progress", body:["Wall finishing in progress","Exterior paint application","Window & frame finishing"]},
+    {heading:"MEP progress", body:["Piping installation with equipment set-up ongoing"]},
+    {heading:"Equipment, utensils & IT", body:["Pending payment clearance before fabrication can proceed"]},
+  ],
+  parties:[
+    {role:"Main contractor — civil", name:"PT. Mitra Konstruksi Indonesia"},
+    {role:"Main contractor — MEP", name:"PT. Mitra Konstruksi Indonesia"},
+  ],
+  infoExtra:[
+    {label:"Site area", value:"420 sqm"},
+  ],
+  stickyNotes:[
+    {x:900, y:120, text:"Call landlord re: fit-out approval extension", color:"#FFF6A8"},
+  ],
+  discussionCards:[
+    {type:"spades", x:10, y:14, z:1, text:"Landlord sign-off on signage placement"},
+    {type:"diamonds", x:150, y:60, z:2, text:"Confirm supplier for kitchen extraction hood"},
+  ],
+  assigneeNames:["Kah Kah", "Sabrina", "Michael"],
+  checklist: (() => {
+    const c = structuredClone(DEFAULT_CHECKLIST);
+    c[0].checked = true; c[1].checked = true; // kick off + briefing done
+    c[2].subitems = [ // layout design: 2 of 3 done
+      {label:"Layout plan", checked:true}, {label:"3D render", checked:true}, {label:"Detailed drawings", checked:false}
+    ];
+    c[4].subitems = [{label:"Submission", checked:true}, {label:"Approval", checked:false}]; // M&E: 1 of 2
+    c.push(
+      { label:"Landlord fit-out approval", checked:true, has_subchecklist:false, subitems:[], drive_link:null, list:"external", sort_order:c.length, assignee:"Michael" },
+      { label:"Utility connection (power/water)", checked:false, has_subchecklist:false, subitems:[], drive_link:null, list:"external", sort_order:c.length+1, assignee:"Kah Kah" },
+      { label:"Fire safety certification", checked:false, has_subchecklist:false, subitems:[], drive_link:null, list:"external", sort_order:c.length+2, assignee:null },
+    );
+    return c;
+  })(),
+  photos:{
+    this:[
+      {url:"https://images.unsplash.com/photo-1541976590-713941681591?w=400&q=60", source:"storage"},
+      {url:"https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=400&q=60", source:"storage"},
+    ],
+    last:[
+      {url:"https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400&q=60", source:"storage"},
+      {url:"https://images.unsplash.com/photo-1489514354504-1653aa90e34e?w=400&q=60", source:"storage"},
+    ]
+  },
+  ganttTasks:[
+    { client_key:"g_demo1", label:"Kick off meeting", start_date:"2026-05-14", end_date:"2026-05-15", progress:100, source_type:"checklist", source_label:"Kick off meeting", depends_on:[], sort_order:0 },
+    { client_key:"g_demo2", label:"Layout design", start_date:"2026-05-16", end_date:"2026-05-26", progress:0, source_type:"checklist", source_label:"Layout design", depends_on:["g_demo1"], sort_order:1 },
+    { client_key:"g_demo3", label:"Procurement", start_date:"2026-05-20", end_date:"2026-06-01", progress:0, source_type:"checklist", source_label:"Procurement", depends_on:["g_demo2"], sort_order:2 },
+    { client_key:"g_demo4", label:"Finish project", start_date:"2026-06-04", end_date:"2026-06-04", progress:0, source_type:"milestone", source_label:"Finish project", depends_on:["g_demo3"], sort_order:3 },
+    { client_key:"g_demo5", label:"Training", start_date:"2026-06-08", end_date:"2026-06-08", progress:0, source_type:"milestone", source_label:"Training", depends_on:["g_demo4"], sort_order:4 },
+  ],
+};
+
+/* Demo data uses the legacy this/last keys for readability above; map
+   them onto real date-range week keys before use, same as live data. */
+function demoState(){
+  const demo = structuredClone(DEMO);
+  const [lastWeekKey, thisWeekKey] = defaultWeekKeys();
+  demo.photos = { [lastWeekKey]: demo.photos.last, [thisWeekKey]: demo.photos.this };
+  demo.photoWeeks = mergeWeekKeys([lastWeekKey, thisWeekKey]);
+  collapseAllParents(demo.checklist);
+  return demo;
+}
+
+/* ---------------------------------------------------------------
+   GLOBAL STATE
+--------------------------------------------------------------- */
+let supabase = null;
+let editMode = false;
+let usingDemo = false;
+let state = null;
+// Snapshot of state's saveable fields, taken the moment edit mode is
+// entered (and refreshed after every successful save). Discard restores
+// this rather than re-fetching from Supabase, because autosave writes
+// changes to the database within ~1s of each edit — by the time someone
+// clicks Discard, this session's edits are usually already saved, so a
+// re-fetch would just hand them right back instead of undoing them.
+let editSessionSnapshot = null;
+
+let outlets = []; // each row from the `projects` table is one "outlet" (site)
+
+async function getClient(){
+  if(supabase) return supabase;
+  if(!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return supabase;
+}
+
+/* ---------------------------------------------------------------
+   PHOTO URL RESOLUTION
+--------------------------------------------------------------- */
+function extractDriveFileId(ref){
+  if(!ref) return null;
+  const patterns = [/\/d\/([a-zA-Z0-9_-]+)/, /[?&]id=([a-zA-Z0-9_-]+)/];
+  for(const p of patterns){ const m = ref.match(p); if(m) return m[1]; }
+  return /^[a-zA-Z0-9_-]{10,}$/.test(ref) ? ref : null;
+}
+function driveThumbnailUrl(ref, size=500){
+  const id = extractDriveFileId(ref);
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${size}` : null;
+}
+function resolvePhotoUrl(row, client){
+  if(row.source === "drive") return driveThumbnailUrl(row.ref || row.url);
+  if(client && row.ref) return client.storage.from(STORAGE_BUCKET).getPublicUrl(row.ref).data.publicUrl;
+  return row.url || row.ref;
+}
+
+/* ---------------------------------------------------------------
+   PHOTO WEEKS
+   Each photo is tagged with the Monday (ISO date, e.g. "2026-09-14")
+   of the week it belongs to. Tabs are built from: the two default
+   weeks (last week + this week, always computed fresh off today's
+   date) plus any extra weeks added in edit mode, which are persisted
+   in the `photo_weeks` table so they survive a reload.
+   Legacy rows tagged "this"/"last" (from before date-range weeks)
+   are transparently mapped onto the current default week keys.
+--------------------------------------------------------------- */
+function mondayOf(date){
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  return d;
+}
+function addDays(d, n){ const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function isoDate(d){
+  // Build from local date parts (not toISOString, which converts to UTC
+  // and would shift the date for timezones ahead of UTC).
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function weekKeyFor(date){ return isoDate(mondayOf(date)); }
+function defaultWeekKeys(){
+  const thisWeek = weekKeyFor(new Date());
+  const lastWeek = isoDate(addDays(new Date(thisWeek + "T00:00:00"), -7));
+  return [lastWeek, thisWeek];
+}
+function weekLabel(startKey){
+  const start = new Date(startKey + "T00:00:00");
+  const end = addDays(start, 6);
+  const f = d => d.toLocaleDateString("en-GB", {day:"numeric", month:"short"});
+  return `${f(start)} – ${f(end)}`;
+}
+function normalizeWeekKey(raw, lastWeekKey, thisWeekKey){
+  if(raw === "this") return thisWeekKey;
+  if(raw === "last") return lastWeekKey;
+  return raw;
+}
+function mergeWeekKeys(...lists){
+  return [...new Set(lists.flat().filter(Boolean))].sort();
+}
+function nextWeekKeyAfter(weeks){
+  // weeks is sorted ascending; the next tab is always the calendar week
+  // (Mon–Sun) right after the latest one currently on file.
+  if(!weeks || !weeks.length) return weekKeyFor(new Date());
+  return isoDate(addDays(new Date(weeks[weeks.length-1] + "T00:00:00"), 7));
+}
+
+/* ---------------------------------------------------------------
+   DATA LOADING
+--------------------------------------------------------------- */
+async function loadData(){
+  if(!SUPABASE_URL || !SUPABASE_ANON_KEY || !PROJECT_ID){
+    usingDemo = true;
+    return demoState();
+  }
+  try{
+    const client = await getClient();
+    const [
+      {data:project, error:pErr}, {data:milestones},
+      {data:notes}, {data:photos}, {data:parties}, {data:checklist}, {data:infoExtra}, {data:stickyNotes}, {data:discussionCards}, {data:assignees}, {data:photoWeekRows}, {data:ganttRows, error:ganttErr}
+    ] = await Promise.all([
+      client.from("projects").select("*").eq("id", PROJECT_ID).single(),
+      client.from("milestones").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("notes").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("photos").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("parties").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("checklist_items").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("project_info").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("sticky_notes").select("*").eq("project_id", PROJECT_ID),
+      client.from("discussion_cards").select("*").eq("project_id", PROJECT_ID),
+      client.from("checklist_assignees").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("photo_weeks").select("*").eq("project_id", PROJECT_ID),
+      client.from("gantt_tasks").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+    ]);
+    // gantt_tasks is a newer table — if the migration hasn't been run yet
+    // on this Supabase project, treat it as "no gantt data" rather than
+    // failing the whole dashboard load.
+    if(ganttErr) console.warn("Couldn't load gantt_tasks (has the migration been run?):", ganttErr.message || ganttErr);
+    if(pErr || !project) throw pErr || new Error("No project row found");
+    if(project.status === "behind") project.status = "delayed"; // legacy value
+
+    const [lastWeekKey, thisWeekKey] = defaultWeekKeys();
+    const photosByWeek = {};
+    (photos||[]).forEach(p => {
+      const url = resolvePhotoUrl(p, client);
+      const key = normalizeWeekKey(p.week, lastWeekKey, thisWeekKey);
+      if(url) (photosByWeek[key] ||= []).push({ id:p.id, url, source:p.source, ref:p.ref, caption:p.caption });
+    });
+    const photoWeeks = mergeWeekKeys(
+      [lastWeekKey, thisWeekKey],
+      (photoWeekRows||[]).map(r => r.start_date),
+      Object.keys(photosByWeek)
+    );
+
+    const notesGrouped = [];
+    (notes||[]).forEach(n => {
+      let group = notesGrouped.find(g => g.heading === n.heading);
+      if(!group){ group = {heading:n.heading, body:[]}; notesGrouped.push(group); }
+      group.body.push(n.body);
+    });
+
+    // Default assignable names — self-heals into real, editable rows the
+    // first time an outlet is loaded with none on file yet.
+    let assigneeNames = (assignees || []).map(a => a.name);
+    if(!assigneeNames.length){
+      assigneeNames = ["Kah Kah", "Sabrina", "Michael"];
+      client.from("checklist_assignees")
+        .insert(assigneeNames.map((name,i) => ({ project_id: PROJECT_ID, name, sort_order:i })))
+        .then(({error}) => { if(error) console.warn("Couldn't seed default assignees:", error.message || error); });
+    }
+
+    const resolvedChecklist = collapseAllParents(checklist && checklist.length
+      ? checklist.map(c => ({ ...c, subitems: c.subitems || [], list: c.list === "external" ? "external" : "internal" }))
+      : structuredClone(DEFAULT_CHECKLIST));
+    const resolvedMilestones = milestones && milestones.length ? milestones : [];
+
+    // Gantt tasks self-heal the same way assignees do: the first time an
+    // outlet is opened with none on file yet (and the migration has been
+    // run — ganttErr is null), seed one row per top-level checklist item
+    // and one per milestone so the chart isn't empty on first use. After
+    // that, the table is the source of truth and is never re-seeded.
+    let ganttTasks = (ganttRows || []).map(g => ({
+      client_key: g.client_key, label: g.label, start_date: g.start_date || null, end_date: g.end_date || null,
+      progress: g.progress || 0, source_type: g.source_type || "custom", source_label: g.source_label || null,
+      depends_on: Array.isArray(g.depends_on) ? g.depends_on : [], sort_order: g.sort_order || 0, color: g.color || null,
+    })).sort((a,b) => a.sort_order - b.sort_order);
+    if(!ganttTasks.length && !ganttErr && (resolvedChecklist.length || resolvedMilestones.length)){
+      ganttTasks = buildSeedGanttTasks(resolvedChecklist, resolvedMilestones, project);
+      if(ganttTasks.length){
+        client.from("gantt_tasks")
+          .insert(ganttTasks.map(g => ganttTaskRow(g, PROJECT_ID)))
+          .then(({error}) => { if(error) console.warn("Couldn't seed gantt tasks:", error.message || error); });
+      }
+    }
+
+    usingDemo = false;
+    return {
+      project,
+      milestones: resolvedMilestones,
+      notes: notesGrouped,
+      parties: parties && parties.length ? parties : [],
+      checklist: resolvedChecklist,
+      photos: photosByWeek,
+      photoWeeks,
+      infoExtra: infoExtra && infoExtra.length ? infoExtra.map(f => ({ label:f.label, value:f.value, isDate: !!f.is_date })) : [],
+      stickyNotes: stickyNotes && stickyNotes.length ? stickyNotes.map(n => ({ x:n.x, y:n.y, text:n.text, color:n.color || "#FFF6A8", z:n.z || 1 })) : [],
+      discussionCards: discussionCards && discussionCards.length ? discussionCards.map(c => ({ type:c.type, x:c.x, y:c.y, z:c.z || 1, text:c.text || "" })) : [],
+      assigneeNames,
+      ganttTasks,
+    };
+  }catch(err){
+    console.warn("Supabase fetch failed, showing demo data:", err.message || err);
+    usingDemo = true;
+    return demoState();
+  }
+}
+
+/* ---------------------------------------------------------------
+   OUTLETS (each `projects` row is one outlet/site; same tables,
+   scoped by project_id, back every outlet)
+--------------------------------------------------------------- */
+async function loadOutlets(){
+  if(!SUPABASE_CONFIGURED) return [];
+  try{
+    const client = await getClient();
+    const { data, error } = await client.from("projects").select("id,name,code").order("name");
+    if(error) throw error;
+    return data || [];
+  }catch(err){
+    console.warn("Couldn't load outlets:", err.message || err);
+    return [];
+  }
+}
+
+async function switchOutlet(id){
+  if(!id || id === PROJECT_ID) return;
+  if(saveTimer) await persistNow();
+  PROJECT_ID = id;
+  localStorage.setItem(OUTLET_STORAGE_KEY, id);
+  editMode = false;
+  ganttPickerMode = null;
+  updateEditBarVisibility();
+  document.getElementById("saveStatus").textContent = "";
+  state = await loadData();
+  populateOutletSelect();
+  renderAll();
+}
+
+function populateOutletSelect(){
+  const sel = document.getElementById("outletSelect");
+  sel.style.display = outlets.length ? "inline-block" : "none";
+  sel.innerHTML = outlets.map(o => `
+    <option value="${o.id}" ${o.id === PROJECT_ID ? "selected" : ""}>${esc(o.name || "Untitled outlet")}${o.code ? " ("+esc(o.code)+")" : ""}</option>
+  `).join("");
+}
+
+function renderOutletsSettings(){
+  const list = document.getElementById("outletsList");
+  list.innerHTML = outlets.map(o => `
+    <div class="outlet-row" data-id="${o.id}">
+      <input type="text" class="outlet-name-input" value="${esc(o.name || "")}" data-id="${o.id}" placeholder="Outlet name">
+      <input type="text" class="outlet-code-input" value="${esc(o.code || "")}" data-id="${o.id}" placeholder="Code">
+      ${o.id === PROJECT_ID
+        ? `<span class="outlet-current-tag">Current</span>`
+        : `<button class="btn btn-outline outlet-switch-btn" data-id="${o.id}">Switch</button>`}
+      <button class="outlet-delete-btn" data-id="${o.id}" title="Delete outlet">Delete</button>
+    </div>
+  `).join("") || `<div class="settings-empty">No outlets yet — add your first one below.</div>`;
+}
+
+function openSettings(){
+  document.getElementById("settingsOverlay").classList.add("open");
+  renderOutletsSettings();
+}
+function closeSettings(){
+  document.getElementById("settingsOverlay").classList.remove("open");
+}
+
+/* New outlets are seeded from whatever "TOFU G - 1 Utama"'s checklist
+   currently looks like (both internal and external items), not a fixed
+   snapshot — so future changes to that outlet's checklist become the
+   template for any outlet created after that. Falls back to
+   DEFAULT_CHECKLIST if that outlet doesn't exist yet, or its checklist
+   is empty. */
+const TEMPLATE_OUTLET_NAME = "tofu g - 1 utama";
+/* Deep-clones a template outlet's sub-items for a new outlet, preserving
+   nested sub-checklists at any depth (but resetting checked state,
+   assignees, and dates — a fresh outlet starts with everything unchecked,
+   unassigned, and with no due/completed dates of its own). show_assignee
+   and show_due_date are copied as explicitly set (or left unset to fall
+   back to their parent's resolved default), same as the source. */
+function cloneTemplateSubitems(subitems){
+  return (subitems || []).map(s => ({
+    label: s.label,
+    checked: false,
+    assignee: null,
+    show_assignee: (s.show_assignee !== undefined && s.show_assignee !== null) ? s.show_assignee : null,
+    due_date: null,
+    completed_date: null,
+    show_due_date: (s.show_due_date !== undefined && s.show_due_date !== null) ? s.show_due_date : null,
+    has_subchecklist: !!s.has_subchecklist,
+    subitems: cloneTemplateSubitems(s.subitems)
+  }));
+}
+
+async function getTemplateChecklist(){
+  const template = outlets.find(o => (o.name || "").trim().toLowerCase() === TEMPLATE_OUTLET_NAME);
+  if(!template) return structuredClone(DEFAULT_CHECKLIST);
+  try{
+    const client = await getClient();
+    const { data, error } = await client.from("checklist_items")
+      .select("*").eq("project_id", template.id).order("sort_order");
+    if(error) throw error;
+    if(!data || !data.length) return structuredClone(DEFAULT_CHECKLIST);
+    return data.map((c,i) => ({
+      label: c.label,
+      has_subchecklist: !!c.has_subchecklist,
+      subitems: cloneTemplateSubitems(c.subitems),
+      drive_link: null,
+      list: c.list === "external" ? "external" : "internal",
+      sort_order: i
+    }));
+  }catch(err){
+    console.warn("Couldn't load 1 Utama's checklist as a template, falling back to defaults:", err.message || err);
+    return structuredClone(DEFAULT_CHECKLIST);
+  }
+}
+
+async function addOutlet(){
+  const nameInput = document.getElementById("newOutletName");
+  const codeInput = document.getElementById("newOutletCode");
+  const name = nameInput.value.trim();
+  if(!name){ alert("Give the outlet a name first."); return; }
+  const addBtn = document.getElementById("addOutletBtn");
+  addBtn.disabled = true;
+  try{
+    const client = await getClient();
+    const { data, error } = await client.from("projects")
+      .insert({ name, code: codeInput.value.trim() || null, status: "on_track" })
+      .select("id,name,code").single();
+    if(error) throw error;
+
+    const template = await getTemplateChecklist();
+    const checklistRows = template.map((c,i) => {
+      const list = c.list || "internal";
+      return {
+        project_id: data.id, label: c.label, checked: false,
+        has_subchecklist: !!c.has_subchecklist, subitems: c.subitems || [],
+        // A new outlet's PARENT (top-level) tasks start with both the
+        // person icon and the link icon off — either can be turned back on
+        // per item in edit mode. Sub-items keep showing their person icon
+        // and calendar icon (see cloneTemplateSubitems).
+        drive_link: null, list, sort_order: i, show_assignee: false, show_drive_link: false
+      };
+    });
+    if(checklistRows.length){
+      const { error: clErr } = await client.from("checklist_items").insert(checklistRows);
+      if(clErr) console.warn("Couldn't seed checklist for new outlet:", clErr.message || clErr);
+    }
+
+    // Every new outlet starts with two site-photo week tabs already in
+    // place: the week it was created in, and the week before it.
+    const [lastWeekKey, thisWeekKey] = defaultWeekKeys();
+    const { error: pwErr } = await client.from("photo_weeks").insert([
+      { project_id: data.id, start_date: lastWeekKey },
+      { project_id: data.id, start_date: thisWeekKey },
+    ]);
+    if(pwErr) console.warn("Couldn't seed photo weeks for new outlet:", pwErr.message || pwErr);
+
+    outlets.push(data);
+    outlets.sort((a,b) => (a.name||"").localeCompare(b.name||""));
+    nameInput.value = ""; codeInput.value = "";
+    populateOutletSelect();
+    await switchOutlet(data.id);
+    renderOutletsSettings();
+  }catch(err){
+    alert("Couldn't add outlet: " + (err.message || err));
+  }finally{
+    addBtn.disabled = false;
+  }
+}
+
+async function renameOutlet(id, name, code){
+  try{
+    const client = await getClient();
+    const { error } = await client.from("projects").update({ name, code: code || null }).eq("id", id);
+    if(error) throw error;
+    const o = outlets.find(o => o.id === id);
+    if(o){ o.name = name; o.code = code; }
+    populateOutletSelect();
+    if(id === PROJECT_ID){
+      state.project.name = name; state.project.code = code;
+      renderHeaderReadonly(); renderInfoReadonly();
+    }
+  }catch(err){
+    alert("Couldn't update outlet: " + (err.message || err));
+  }
+}
+
+async function deleteOutlet(id){
+  const outlet = outlets.find(o => o.id === id);
+  const proceed = confirm(`You are about to delete the "${outlet?.name || "this"}" outlet, do you wish to proceed?\n\nThis will permanently remove its checklist, milestones, notes, and photos. This can't be undone.`);
+  if(!proceed) return;
+  try{
+    const client = await getClient();
+    await Promise.all([
+      client.from("milestones").delete().eq("project_id", id),
+      client.from("notes").delete().eq("project_id", id),
+      client.from("photos").delete().eq("project_id", id),
+      client.from("parties").delete().eq("project_id", id),
+      client.from("checklist_items").delete().eq("project_id", id),
+      client.from("project_info").delete().eq("project_id", id),
+      client.from("sticky_notes").delete().eq("project_id", id),
+      client.from("discussion_cards").delete().eq("project_id", id),
+      client.from("checklist_assignees").delete().eq("project_id", id),
+    ]);
+    const { error } = await client.from("projects").delete().eq("id", id);
+    if(error) throw error;
+
+    outlets = outlets.filter(o => o.id !== id);
+    if(id === PROJECT_ID){
+      if(outlets.length){
+        PROJECT_ID = null; // force switchOutlet to treat this as a real change
+        await switchOutlet(outlets[0].id);
+      }else{
+        PROJECT_ID = "";
+        localStorage.removeItem(OUTLET_STORAGE_KEY);
+        usingDemo = true;
+        state = await loadData();
+        document.getElementById("outletSelect").style.display = "none";
+        document.getElementById("editToggleBtn").style.display = "none";
+        renderAll();
+      }
+    }
+    populateOutletSelect();
+    renderOutletsSettings();
+  }catch(err){
+    alert("Couldn't delete outlet: " + (err.message || err));
+  }
+}
+
+document.getElementById("settingsBtn").addEventListener("click", openSettings);
+document.getElementById("settingsCloseBtn").addEventListener("click", closeSettings);
+document.getElementById("settingsOverlay").addEventListener("click", e => {
+  if(e.target.id === "settingsOverlay") closeSettings();
+});
+document.getElementById("addOutletBtn").addEventListener("click", addOutlet);
+document.getElementById("outletSelect").addEventListener("change", e => switchOutlet(e.target.value));
+document.getElementById("outletsList").addEventListener("change", e => {
+  if(!e.target.matches(".outlet-name-input, .outlet-code-input")) return;
+  const row = e.target.closest(".outlet-row");
+  const id = row.dataset.id;
+  const name = row.querySelector(".outlet-name-input").value.trim();
+  const code = row.querySelector(".outlet-code-input").value.trim();
+  if(!name){ alert("Outlet name can't be empty."); renderOutletsSettings(); return; }
+  renameOutlet(id, name, code);
+});
+document.getElementById("outletsList").addEventListener("click", e => {
+  const switchBtn = e.target.closest(".outlet-switch-btn");
+  const delBtn = e.target.closest(".outlet-delete-btn");
+  if(switchBtn) switchOutlet(switchBtn.dataset.id).then(renderOutletsSettings);
+  if(delBtn) deleteOutlet(delBtn.dataset.id);
+});
+
+/* ---------------------------------------------------------------
+   HELPERS
+--------------------------------------------------------------- */
+function fmtDate(d){
+  if(!d) return "—";
+  const dt = new Date(d);
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString("en-GB",{day:"numeric", month:"short", year:"numeric"});
+}
+function toInputDate(d){
+  if(!d) return "";
+  const dt = new Date(d);
+  if(isNaN(dt)) return "";
+  return dt.toISOString().slice(0,10);
+}
+function esc(s){
+  return (s ?? "").toString().replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------------------------------------------------------------
+   RENDER: READ-ONLY SECTIONS
+--------------------------------------------------------------- */
+function renderHeaderReadonly(){
+  const { project } = state;
+  document.getElementById("projectTitle").style.display = "";
+  document.getElementById("projectTitleInput").style.display = "none";
+  document.getElementById("projectTitle").textContent = project.name || "Untitled project";
+  document.getElementById("projectSub").textContent =
+    `${project.code || ""} · Construction period ${fmtDate(project.period_start)} – ${fmtDate(project.period_end)}`;
+
+  const statusLabels = { on_track:"On track", delayed:"Delayed", complete:"Complete" };
+  document.getElementById("statusPill").style.display = "inline-flex";
+  document.getElementById("statusSelect").style.display = "none";
+  document.getElementById("statusPill").classList.toggle("ok", project.status === "on_track");
+  document.getElementById("statusPill").classList.toggle("complete", project.status === "complete");
+  document.getElementById("statusText").textContent = statusLabels[project.status] || "Delayed";
+}
+
+function renderInfoReadonly(){
+  const { project } = state;
+  document.getElementById("infoTable").style.display = "";
+  document.getElementById("infoEdit").style.display = "none";
+  document.getElementById("infoTable").innerHTML = `
+    <tr><td>Project code</td><td>${esc(project.code) || "—"}</td></tr>
+    <tr><td>Construction period</td><td>${fmtDate(project.period_start)} – ${fmtDate(project.period_end)}</td></tr>
+    <tr><td>Target live</td><td>${fmtDate(project.target_live)}</td></tr>
+    <tr><td>Original target live</td><td>${fmtDate(project.original_target_live)}</td></tr>
+    ${(state.infoExtra||[]).map(f => `<tr><td>${esc(f.label) || "—"}</td><td>${f.isDate ? fmtDate(f.value) : (esc(f.value) || "—")}</td></tr>`).join("")}
+  `;
+}
+
+function renderPartiesReadonly(){
+  document.getElementById("partiesList").style.display = "";
+  document.getElementById("partiesEdit").style.display = "none";
+  document.getElementById("partiesList").innerHTML = state.parties.map(p => `
+    <div class="party">
+      <div><div class="party-role">${esc(p.role)}</div><div class="party-name">${esc(p.name) || "—"}</div></div>
+    </div>
+  `).join("") || `<div style="font-size:13px;color:var(--ink-soft)">No parties added yet.</div>`;
+}
+
+function renderTimelineReadonly(){
+  document.getElementById("timeline").style.display = "";
+  document.getElementById("timelineEdit").style.display = "none";
+  document.getElementById("timeline").innerHTML = state.milestones.map(m => `
+    <div class="tl-item ${m.state}">
+      <div class="tl-date">${fmtDate(m.date)}</div>
+      <div class="tl-name">${esc(m.name)}</div>
+    </div>
+  `).join("") || `<div style="font-size:13px;color:var(--ink-soft)">No milestones yet.</div>`;
+}
+
+function renderNotesReadonly(){
+  document.getElementById("notesGrid").style.display = "";
+  document.getElementById("notesEdit").style.display = "none";
+  document.getElementById("notesGrid").innerHTML = state.notes.map(n => `
+    <div class="note-card">
+      <h4>${esc(n.heading)}</h4>
+      <ul>${n.body.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>
+    </div>
+  `).join("") || `<div style="font-size:13px;color:var(--ink-soft)">No notes yet.</div>`;
+}
+
+/* Progress is fully derived from the checklist:
+   - Category bars: one per checklist item with a sub-checklist, % = sub-items checked.
+   - Overall completion: average across ALL checklist items (sub-checklist items use
+     their sub-item ratio; plain items count as 0% or 100%). */
+function itemPct(c){
+  if(c.has_subchecklist) return (c.subitems && c.subitems.length) ? Math.round(100 * c.subitems.filter(s=>isItemDone(s)).length / c.subitems.length) : 0;
+  return c.checked ? 100 : 0;
+}
+
+function renderProgressFromChecklist(){
+  const total = state.checklist.length;
+  const doneCount = state.checklist.filter(c => isItemDone(c)).length;
+  const overallPct = total ? Math.round(state.checklist.reduce((s,c)=>s+itemPct(c),0)/total) : 0;
+
+  document.getElementById("overallPct").textContent = overallPct + "%";
+  document.getElementById("overallBarFill").style.width = overallPct + "%";
+  document.getElementById("overallCount").textContent = `${doneCount} / ${total} items complete`;
+
+  document.getElementById("actualPct").textContent = overallPct + "%";
+  document.getElementById("planPct").textContent = `${doneCount}/${total}`;
+}
+
+/* ---------------------------------------------------------------
+   GANTT CHART
+   Sits between "Overall project completion" and "Discussion board".
+   Each task is either tied to a top-level checklist item or a
+   schedule milestone (matched live, by label, so its name/progress
+   always reflects the current checklist/schedule) or is a fully
+   custom task. Collapse state and the "add task" picker are
+   session-only UI state (never persisted), same convention as
+   sub-checklist collapse and the active photo-week tab.
+--------------------------------------------------------------- */
+let ganttCollapsed = false;
+let ganttPickerMode = null; // null | "checklist" | "milestone" — which "+ Add" picker is open
+
+/* Resolves each stored gantt task against the live checklist/milestone
+   it's linked to (if any), so a rename or a checked-off sub-item shows
+   up on the chart without needing its own save. Falls back to the
+   task's own stored label/progress if the link is gone (item deleted
+   or renamed) or the task is custom. */
+function ganttResolvedTasks(){
+  return (state.ganttTasks || []).map(g => {
+    let label = g.label, progress = g.progress || 0;
+    if(g.source_type === "checklist"){
+      const match = state.checklist.find(c => c.label === g.source_label);
+      if(match){ label = match.label; progress = itemPct(match); }
+    } else if(g.source_type === "milestone"){
+      const match = state.milestones.find(m => m.name === g.source_label);
+      if(match){ label = match.name; progress = match.state === "done" ? 100 : match.state === "active" ? 50 : 0; }
+    }
+    return { ...g, _label: label, _progress: Math.max(0, Math.min(100, progress)) };
+  });
+}
+
+function ganttParseDate(d){
+  if(!d) return null;
+  const dt = new Date(d + "T00:00:00");
+  return isNaN(dt) ? null : dt;
+}
+function ganttDaysBetween(a, b){ return Math.round((b - a) / 86400000); }
+
+/* Date range the chart is scaled to: every task's start/end plus the
+   project's own key dates, padded a few days each side, with a 14-day
+   floor so a brand-new project with one date on file isn't scaled to
+   a single sliver. Falls back to "today ± a few weeks" if nothing has
+   a date yet. Always snapped out to whole Monday–Sunday weeks so the
+   week ruler never shows a partial week at either end. */
+function ganttBounds(tasks){
+  const raw = [];
+  tasks.forEach(t => { if(t.start_date) raw.push(t.start_date); if(t.end_date) raw.push(t.end_date); });
+  const p = state.project || {};
+  [p.period_start, p.period_end, p.target_live].forEach(d => { if(d) raw.push(d); });
+  const parsed = raw.map(ganttParseDate).filter(Boolean);
+  let min, max;
+  if(!parsed.length){
+    const today = new Date(); today.setHours(0,0,0,0);
+    min = addDays(today, -7); max = addDays(today, 21);
+  } else {
+    min = addDays(new Date(Math.min(...parsed)), -3);
+    max = addDays(new Date(Math.max(...parsed)), 3);
+    if(ganttDaysBetween(min, max) < 14) max = addDays(min, 14);
+  }
+  min = mondayOf(min);
+  max = addDays(mondayOf(max), 6);
+  return { min, max };
+}
+/* Days-per-pixel scale — aims for a total chart width that fits (or
+   nearly fits) the panel without scrolling for short ranges, and backs
+   off for longer ones. The scroll buttons take over once the natural
+   week/day width no longer fits. Bounds and target are all +20% over
+   the original scale, per feedback that day/week cells felt cramped. */
+function ganttPxPerDay(totalDays){
+  return Math.max(7, Math.min(34, Math.round(1200 / Math.max(totalDays, 1))));
+}
+/* One colour per calendar month (indexed by absolute month number, not
+   position in the visible range, so a given month keeps the same
+   colour if the chart is scrolled or its date range changes) — makes
+   the month partitions immediately readable at a glance. */
+const GANTT_MONTH_PALETTE = ["#1B3A5C", "#E15A2D", "#4B7A5B", "#C68A1E", "#7C97AE", "#B03A2E"];
+function ganttMonthColor(year, monthIndex){
+  const absMonth = year * 12 + monthIndex;
+  return GANTT_MONTH_PALETTE[((absMonth % GANTT_MONTH_PALETTE.length) + GANTT_MONTH_PALETTE.length) % GANTT_MONTH_PALETTE.length];
+}
+function ganttMonthRulerHtml(min, max, pxPerDay, monthH){
+  const months = [];
+  let cur = new Date(min.getFullYear(), min.getMonth(), 1);
+  while(cur <= max){
+    const next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    const segStart = cur < min ? min : cur;
+    const segEnd = next < max ? next : max;
+    const left = ganttDaysBetween(min, segStart) * pxPerDay;
+    const width = Math.max(1, ganttDaysBetween(segStart, segEnd) * pxPerDay);
+    months.push({
+      label: cur.toLocaleDateString("en-GB", {month:"short", year:"numeric"}), left, width,
+      color: ganttMonthColor(cur.getFullYear(), cur.getMonth()),
+    });
+    cur = next;
+  }
+  return months.map(m => `<div class="gantt-ruler-month" style="left:${m.left}px; width:${m.width}px; height:${monthH}px; background:${m.color};">${esc(m.label)}</div>`).join("");
+}
+/* "14–20 May" within one month, "28 May – 3 Jun" when a week spans two. */
+function ganttWeekLabel(monday){
+  const start = monday, end = addDays(monday, 6);
+  const day = d => d.getDate();
+  const mon = d => d.toLocaleDateString("en-GB", {month:"short"});
+  return start.getMonth() === end.getMonth()
+    ? `${day(start)}–${day(end)} ${mon(start)}`
+    : `${day(start)} ${mon(start)} – ${day(end)} ${mon(end)}`;
+}
+function ganttWeekRulerHtml(min, max, pxPerDay, topOffset, weekH){
+  const weeks = [];
+  for(let cur = new Date(min); cur < max; cur = addDays(cur, 7)){
+    const left = ganttDaysBetween(min, cur) * pxPerDay;
+    weeks.push(`<div class="gantt-ruler-week" style="left:${left}px; width:${pxPerDay * 7}px; top:${topOffset}px; height:${weekH}px;">${esc(ganttWeekLabel(cur))}</div>`);
+  }
+  return weeks.join("");
+}
+function ganttWeekGridlinesHtml(min, max, pxPerDay){
+  const lines = [];
+  for(let cur = addDays(new Date(min), 7); cur < max; cur = addDays(cur, 7)){
+    lines.push(`<div class="gantt-week-gridline" style="left:${ganttDaysBetween(min, cur) * pxPerDay}px;"></div>`);
+  }
+  return lines.join("");
+}
+const GANTT_SRC_ICON = { checklist:"▣", milestone:"◆", custom:"✎" };
+const GANTT_DEFAULT_HEX = { checklist:"#1B3A5C", milestone:"#E15A2D", custom:"#7C97AE" };
+function ganttBarColor(t){ return t.color || GANTT_DEFAULT_HEX[t.source_type] || GANTT_DEFAULT_HEX.custom; }
+
+/* Show/hide + enable/disable the gantt chart's own scroll arrows, based
+   on whether the chart actually overflows the panel — same convention
+   as updateTabsNav() for the photo-week carousel. */
+function updateGanttScrollNav(){
+  const track = document.querySelector("#ganttReadonly .gantt-scroll-outer");
+  const prev = document.querySelector("#ganttReadonly .gantt-scroll-prev");
+  const next = document.querySelector("#ganttReadonly .gantt-scroll-next");
+  if(!track || !prev || !next) return;
+  const overflowing = track.scrollWidth > track.clientWidth + 1;
+  prev.hidden = !overflowing;
+  next.hidden = !overflowing;
+  if(!overflowing) return;
+  prev.disabled = track.scrollLeft <= 0;
+  next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+}
+
+function renderGanttReadonly(){
+  document.getElementById("ganttReadonly").style.display = "";
+  document.getElementById("ganttEdit").style.display = "none";
+  document.getElementById("ganttToolbar").style.display = "none";
+  const container = document.getElementById("ganttReadonly");
+  const tasks = ganttResolvedTasks();
+  if(!tasks.length){
+    container.innerHTML = `<div class="gantt-empty">No gantt tasks yet. Switch to edit mode to add tasks from the checklist, the schedule, or a custom one.</div>`;
+    return;
+  }
+  const { min, max } = ganttBounds(tasks);
+  const totalDays = Math.max(7, ganttDaysBetween(min, max));
+  const pxPerDay = ganttPxPerDay(totalDays);
+  const plotWidth = totalDays * pxPerDay;
+  const MONTH_H = 16, WEEK_H = 22, RULER_H = MONTH_H + WEEK_H, ROW_H = 36, BAR_H = 22;
+  const x = iso => { const d = ganttParseDate(iso); return d ? ganttDaysBetween(min, d) * pxPerDay : null; };
+
+  const rects = {};
+  const rowsHtml = [], barsHtml = [];
+  tasks.forEach((t, i) => {
+    const top = RULER_H + i * ROW_H;
+    rowsHtml.push(`
+      <div class="gantt-row-label" title="${esc(t._label)}">
+        <span class="gr-src">${GANTT_SRC_ICON[t.source_type] || "✎"}</span><span class="gr-text">${esc(t._label)}</span>
+      </div>`);
+    barsHtml.push(`<div class="gantt-row-track" style="top:${top}px;"></div>`);
+    if(t.start_date || t.end_date){
+      const s = t.start_date || t.end_date, e = t.end_date || t.start_date;
+      const x1 = x(s), x2 = x(e) + pxPerDay;
+      const w = Math.max(6, x2 - x1);
+      rects[t.client_key] = { x1, x2: x1 + w, midY: top + ROW_H / 2 };
+      barsHtml.push(`
+        <div class="gantt-bar" style="left:${x1}px; top:${top + (ROW_H-BAR_H)/2}px; width:${w}px; background:${ganttBarColor(t)};"
+             title="${esc(t._label)} — ${fmtDate(s)} to ${fmtDate(e)} (${t._progress}% complete)">
+          <div class="gantt-bar-fill" style="width:${t._progress}%;"></div>
+          <span class="gantt-bar-label">${esc(t._label)}</span>
+        </div>`);
+    } else {
+      barsHtml.push(`<div class="gantt-bar-nodate" style="left:6px; top:${top + (ROW_H-BAR_H)/2}px;">No dates set</div>`);
+    }
+  });
+
+  const todayIso = isoDate(new Date());
+  const todayX = x(todayIso);
+  const todayHtml = (todayX !== null && todayX >= 0 && todayX <= plotWidth)
+    ? `<div class="gantt-today-line" style="left:${todayX}px;"></div>` : "";
+
+  const depPaths = [];
+  tasks.forEach(t => {
+    (t.depends_on || []).forEach(depKey => {
+      const from = rects[depKey], to = rects[t.client_key];
+      if(!from || !to) return;
+      const midX = from.x2 + 10;
+      depPaths.push(`<path d="M ${from.x2} ${from.midY} H ${midX} V ${to.midY} H ${to.x1}" fill="none" stroke="#7C97AE" stroke-width="1.4" marker-end="url(#ganttArrow)"/>`);
+    });
+  });
+  const plotHeight = RULER_H + tasks.length * ROW_H;
+  const svgHtml = depPaths.length ? `
+    <svg class="gantt-deps-svg" width="${plotWidth}" height="${plotHeight}">
+      <defs><marker id="ganttArrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#7C97AE"/></marker></defs>
+      ${depPaths.join("")}
+    </svg>` : "";
+
+  container.innerHTML = `
+    <div class="gantt-legend">
+      <span><i style="background:${GANTT_DEFAULT_HEX.checklist}"></i>Checklist item</span>
+      <span><i style="background:${GANTT_DEFAULT_HEX.milestone}"></i>Schedule milestone</span>
+      <span><i style="background:${GANTT_DEFAULT_HEX.custom}"></i>Custom task</span>
+      <span style="opacity:0.8;">Colours are editable per task in edit mode</span>
+    </div>
+    <div class="gantt-scroll-row">
+      <button type="button" class="tabs-nav gantt-scroll-prev" aria-label="Scroll gantt chart left" hidden>‹</button>
+      <div class="gantt-scroll-outer">
+        <div class="gantt-grid">
+          <div class="gantt-grid-labels" style="height:${plotHeight}px;">
+            <div class="gantt-ruler-spacer" style="height:${RULER_H}px;"></div>
+            ${rowsHtml.join("")}
+          </div>
+          <div class="gantt-grid-plot" style="width:${plotWidth}px; height:${plotHeight}px;">
+            <div class="gantt-ruler" style="width:${plotWidth}px; height:${RULER_H}px;">
+              ${ganttMonthRulerHtml(min, max, pxPerDay, MONTH_H)}
+              ${ganttWeekRulerHtml(min, max, pxPerDay, MONTH_H, WEEK_H)}
+            </div>
+            ${ganttWeekGridlinesHtml(min, max, pxPerDay)}
+            ${barsHtml.join("")}
+            ${todayHtml}
+            ${svgHtml}
+          </div>
+        </div>
+      </div>
+      <button type="button" class="tabs-nav gantt-scroll-next" aria-label="Scroll gantt chart right" hidden>›</button>
+    </div>`;
+
+  const scrollOuter = container.querySelector(".gantt-scroll-outer");
+  if(scrollOuter) scrollOuter.addEventListener("scroll", updateGanttScrollNav);
+  updateGanttScrollNav();
+}
+
+function renderGanttEdit(){
+  document.getElementById("ganttReadonly").style.display = "none";
+  document.getElementById("ganttToolbar").style.display = "flex";
+  const editEl = document.getElementById("ganttEdit");
+  editEl.style.display = "block";
+  const tasks = ganttResolvedTasks();
+
+  let pickerHtml = "";
+  if(ganttPickerMode){
+    const already = new Set(tasks.filter(t => t.source_type === ganttPickerMode).map(t => t.source_label));
+    const options = ganttPickerMode === "checklist"
+      ? state.checklist.filter(c => !already.has(c.label))
+      : state.milestones.filter(m => !already.has(m.name));
+    pickerHtml = `
+      <div class="gantt-edit-row" style="background:rgba(0,0,0,0.02);">
+        <div class="row-top">
+          <strong style="font-size:12.5px; flex:1;">Add ${ganttPickerMode === "checklist" ? "a checklist item" : "a schedule milestone"} to the chart</strong>
+          <button type="button" class="row-del" id="ganttPickerClose" title="Close">×</button>
+        </div>
+        ${options.length ? options.map(o => `
+          <div class="gantt-add-row">
+            <span style="font-size:12.5px;">${esc(ganttPickerMode === "checklist" ? o.label : o.name)}</span>
+            <button type="button" class="add-row-btn gantt-picker-add" data-label="${esc(ganttPickerMode === "checklist" ? o.label : o.name)}">+ Add</button>
+          </div>`).join("")
+          : `<div class="options-hint">${ganttPickerMode === "checklist" ? "Every checklist item is already on the chart." : "Every milestone is already on the chart."}</div>`}
+      </div>`;
+  }
+
+  if(!tasks.length && !pickerHtml){
+    editEl.innerHTML = `<div class="gantt-empty">No gantt tasks yet — use the buttons above to add one.</div>`;
+    return;
+  }
+
+  const rowsHtml = tasks.map((t, idx) => {
+    const isCustom = t.source_type === "custom";
+    const others = tasks.filter(o => o.client_key !== t.client_key);
+    const depsChecked = new Set(t.depends_on || []);
+    return `
+      <div class="gantt-edit-row" data-key="${esc(t.client_key)}">
+        <div class="row-top">
+          <div class="row-order">
+            <button type="button" class="gantt-move-btn" data-key="${esc(t.client_key)}" data-dir="-1" title="Move up" ${idx === 0 ? "disabled" : ""}>▲</button>
+            <button type="button" class="gantt-move-btn" data-key="${esc(t.client_key)}" data-dir="1" title="Move down" ${idx === tasks.length - 1 ? "disabled" : ""}>▼</button>
+          </div>
+          <span class="gr-source-tag src-${t.source_type}">${t.source_type}</span>
+          ${isCustom
+            ? `<input type="text" class="gr-label-input" data-field="label" placeholder="Task name" value="${esc(t.label)}">`
+            : `<div class="gr-label-fixed">${esc(t._label)}</div>`}
+          <button type="button" class="row-del gantt-row-del" data-key="${esc(t.client_key)}" title="Remove from gantt chart">×</button>
+        </div>
+        <div class="gr-fields">
+          <div class="gr-field"><label>Start</label><input type="date" data-field="start_date" value="${toInputDate(t.start_date)}"></div>
+          <div class="gr-field"><label>End</label><input type="date" data-field="end_date" value="${toInputDate(t.end_date)}"></div>
+          ${isCustom
+            ? `<div class="gr-field"><label>Progress %</label><input type="number" min="0" max="100" data-field="progress" value="${t.progress || 0}"></div>`
+            : `<div class="gr-field"><label>Progress</label><div class="gr-progress-readout">${t._progress}% — auto</div></div>`}
+          <div class="gr-field">
+            <label>Colour</label>
+            <div class="gr-color-row">
+              <input type="color" data-field="color" value="${esc(t.color || GANTT_DEFAULT_HEX[t.source_type] || GANTT_DEFAULT_HEX.custom)}">
+              ${t.color ? `<button type="button" class="gantt-color-reset" data-key="${esc(t.client_key)}" title="Reset to default colour">↺</button>` : ""}
+            </div>
+          </div>
+          <button type="button" class="gantt-deps-toggle" data-key="${esc(t.client_key)}">Depends on${depsChecked.size ? ` (${depsChecked.size})` : ""}</button>
+        </div>
+        <div class="gantt-deps-panel" data-key="${esc(t.client_key)}">
+          <div class="deps-hint">Tick the tasks that must happen before this one — an arrow is drawn on the chart for each.</div>
+          ${others.length ? others.map(o => `
+            <label class="inline">
+              <input type="checkbox" data-dep-key="${esc(o.client_key)}" ${depsChecked.has(o.client_key) ? "checked" : ""}>
+              ${esc(o._label)}
+            </label>`).join("") : `<div class="options-hint">No other tasks to depend on yet.</div>`}
+        </div>
+      </div>`;
+  }).join("");
+
+  editEl.innerHTML = pickerHtml + rowsHtml;
+}
+
+/* Cycle guard: adding "fromKey depends on toKey" is only safe if toKey
+   doesn't already (transitively) depend on fromKey. */
+function ganttWouldCreateCycle(fromKey, toKey){
+  const seen = new Set();
+  function dfs(key){
+    if(key === fromKey) return true;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    const node = (state.ganttTasks || []).find(t => t.client_key === key);
+    if(!node) return false;
+    return (node.depends_on || []).some(dfs);
+  }
+  return dfs(toKey);
+}
+
+/* Keeps a checklist-linked gantt task's dates in step with that item's
+   own due date — the only date a checklist item carries (the calendar
+   icon only ever shows on a has_subchecklist / "parent" row, top-level
+   or not; gantt only tracks top-level ones, so call this only for
+   path.length === 1). Setting a due date on an item that isn't on the
+   chart yet auto-adds it; changing or clearing one on an item already
+   there adjusts its end date (and its start date too, if that would
+   otherwise leave the bar with no start, or with a start after its own
+   end). Doesn't touch tasks that were manually detached from a
+   checklist item — there's no such thing here, a checklist-sourced
+   task always tracks its source_label. */
+function syncGanttWithChecklistDueDate(item){
+  if(!state.ganttTasks) return;
+  const task = state.ganttTasks.find(t => t.source_type === "checklist" && t.source_label === item.label);
+  if(!task){
+    if(!item.due_date) return;
+    state.ganttTasks.push({
+      client_key: genGanttKey(), label: item.label, start_date: item.due_date, end_date: item.due_date,
+      progress: 0, source_type: "checklist", source_label: item.label, depends_on: [], sort_order: state.ganttTasks.length,
+    });
+    return;
+  }
+  task.end_date = item.due_date || null;
+  if(item.due_date && (!task.start_date || new Date(task.start_date) > new Date(item.due_date))){
+    task.start_date = item.due_date;
+  }
+}
+
+document.getElementById("ganttPanelTitle").addEventListener("click", () => {
+  ganttCollapsed = !ganttCollapsed;
+  document.getElementById("ganttBody").classList.toggle("is-collapsed", ganttCollapsed);
+  const icon = document.getElementById("ganttCollapseIcon");
+  icon.classList.toggle("is-open", !ganttCollapsed);
+  icon.setAttribute("aria-expanded", String(!ganttCollapsed));
+  if(!ganttCollapsed) updateGanttScrollNav();
+});
+/* Scroll arrows are regenerated with the chart on every render, so this
+   listens on the static panel body (never itself replaced) and looks
+   the track up fresh each click — same delegation pattern used
+   everywhere else in this file for dynamically-rendered rows. */
+document.getElementById("ganttBody").addEventListener("click", e => {
+  const track = document.querySelector("#ganttReadonly .gantt-scroll-outer");
+  if(!track) return;
+  if(e.target.closest(".gantt-scroll-prev")){ track.scrollBy({left: -track.clientWidth * 0.8, behavior:"smooth"}); return; }
+  if(e.target.closest(".gantt-scroll-next")){ track.scrollBy({left: track.clientWidth * 0.8, behavior:"smooth"}); return; }
+});
+window.addEventListener("resize", updateGanttScrollNav);
+document.getElementById("ganttAddFromChecklistBtn").addEventListener("click", () => {
+  ganttPickerMode = "checklist"; renderGanttEdit();
+});
+document.getElementById("ganttAddFromScheduleBtn").addEventListener("click", () => {
+  ganttPickerMode = "milestone"; renderGanttEdit();
+});
+document.getElementById("ganttAddCustomBtn").addEventListener("click", () => {
+  state.ganttTasks.push({
+    client_key: genGanttKey(), label: "New task", start_date: null, end_date: null,
+    progress: 0, source_type: "custom", source_label: null, depends_on: [], sort_order: state.ganttTasks.length,
+  });
+  ganttPickerMode = null;
+  renderGanttEdit(); scheduleAutosave();
+});
+document.getElementById("ganttEdit").addEventListener("click", e => {
+  if(e.target.id === "ganttPickerClose"){ ganttPickerMode = null; renderGanttEdit(); return; }
+  const addBtn = e.target.closest(".gantt-picker-add");
+  if(addBtn){
+    const label = addBtn.dataset.label;
+    if(ganttPickerMode === "checklist"){
+      const match = state.checklist.find(c => c.label === label);
+      state.ganttTasks.push({
+        client_key: genGanttKey(), label, start_date: state.project.period_start || null,
+        end_date: (match && match.due_date) || null, progress: 0, source_type: "checklist",
+        source_label: label, depends_on: [], sort_order: state.ganttTasks.length,
+      });
+    } else if(ganttPickerMode === "milestone"){
+      const match = state.milestones.find(m => m.name === label);
+      const d = match ? match.date : null;
+      state.ganttTasks.push({
+        client_key: genGanttKey(), label, start_date: d || null, end_date: d || null,
+        progress: 0, source_type: "milestone", source_label: label, depends_on: [], sort_order: state.ganttTasks.length,
+      });
+    }
+    ganttPickerMode = null;
+    renderGanttEdit(); scheduleAutosave();
+    return;
+  }
+  const moveBtn = e.target.closest(".gantt-move-btn");
+  if(moveBtn){
+    const key = moveBtn.dataset.key, dir = +moveBtn.dataset.dir;
+    const idx = state.ganttTasks.findIndex(t => t.client_key === key);
+    const swapIdx = idx + dir;
+    if(idx < 0 || swapIdx < 0 || swapIdx >= state.ganttTasks.length) return;
+    [state.ganttTasks[idx], state.ganttTasks[swapIdx]] = [state.ganttTasks[swapIdx], state.ganttTasks[idx]];
+    renderGanttEdit(); scheduleAutosave();
+    return;
+  }
+  const colorResetBtn = e.target.closest(".gantt-color-reset");
+  if(colorResetBtn){
+    const task = state.ganttTasks.find(t => t.client_key === colorResetBtn.dataset.key);
+    if(task){ task.color = null; renderGanttEdit(); scheduleAutosave(); }
+    return;
+  }
+  const delBtn = e.target.closest(".gantt-row-del");
+  if(delBtn){
+    const key = delBtn.dataset.key;
+    state.ganttTasks = state.ganttTasks.filter(t => t.client_key !== key);
+    state.ganttTasks.forEach(t => { t.depends_on = (t.depends_on || []).filter(k => k !== key); });
+    renderGanttEdit(); scheduleAutosave();
+    return;
+  }
+  const depsToggle = e.target.closest(".gantt-deps-toggle");
+  if(depsToggle){
+    const panel = ganttDepsPanelFor(depsToggle.dataset.key);
+    if(panel) panel.classList.toggle("is-open");
+  }
+});
+function ganttDepsPanelFor(key){
+  return document.querySelector(`.gantt-deps-panel[data-key="${CSS.escape(key)}"]`);
+}
+document.getElementById("ganttEdit").addEventListener("input", e => {
+  const row = e.target.closest(".gantt-edit-row[data-key]"); if(!row) return;
+  const field = e.target.dataset.field; if(!field) return;
+  const task = state.ganttTasks.find(t => t.client_key === row.dataset.key); if(!task) return;
+  task[field] = field === "progress" ? Math.max(0, Math.min(100, +e.target.value || 0)) : (e.target.value || null);
+  scheduleAutosave();
+});
+document.getElementById("ganttEdit").addEventListener("change", e => {
+  if(e.target.matches('input[type="color"][data-field="color"]')){
+    // Just show/hide the "reset to default" button for this row — the
+    // value itself was already applied live by the "input" listener above.
+    const row = e.target.closest(".gantt-edit-row[data-key]");
+    if(row) renderGanttEdit();
+    return;
+  }
+  const depKey = e.target.dataset.depKey; if(!depKey) return;
+  const panel = e.target.closest(".gantt-deps-panel[data-key]"); if(!panel) return;
+  const key = panel.dataset.key;
+  const task = state.ganttTasks.find(t => t.client_key === key); if(!task) return;
+  task.depends_on = task.depends_on || [];
+  if(e.target.checked){
+    if(depKey === key){ e.target.checked = false; return; }
+    if(ganttWouldCreateCycle(key, depKey)){
+      alert("That would create a circular dependency — pick a different task.");
+      e.target.checked = false;
+      return;
+    }
+    if(!task.depends_on.includes(depKey)) task.depends_on.push(depKey);
+  } else {
+    task.depends_on = task.depends_on.filter(k => k !== depKey);
+  }
+  renderGanttEdit(); scheduleAutosave();
+});
+
+/* ---------------------------------------------------------------
+   DISCUSSION BOARD — drag cards from the three poker-themed piles
+   (spades/approval, diamonds/purchase, clubs/submission) onto the
+   board, type on them, drag them around, and click to bring one to
+   the front. Always live (not gated on edit mode); position + text
+   autosave, same as sticky notes.
+--------------------------------------------------------------- */
+const DISCUSSION_CARD_LABELS = { spades:"♠ APPROVAL", diamonds:"♦ PURCHASE", clubs:"♣ SUBMISSION" };
+// Poker card proportions (2.5in x 3.5in), double the original default size.
+const DISCUSSION_CARD_W = 256, DISCUSSION_CARD_H = Math.round(256 * 3.5 / 2.5);
+
+function renderDiscussionCards(){
+  const board = document.getElementById("discussionBoard");
+  if(!board) return;
+  const cards = state.discussionCards || [];
+  const emptyNote = document.getElementById("discussionBoardEmpty");
+  if(emptyNote) emptyNote.style.display = cards.length ? "none" : "flex";
+  board.querySelectorAll(".discussion-card").forEach(el => el.remove());
+  cards.forEach((c,i) => {
+    const el = document.createElement("div");
+    el.className = `discussion-card ${esc(c.type)}`;
+    el.dataset.index = i;
+    el.style.left = (c.x || 0) + "px";
+    el.style.top = (c.y || 0) + "px";
+    el.style.zIndex = c.z || 1;
+    el.innerHTML = `
+      <div class="discussion-card-header" data-index="${i}">
+        <span>${DISCUSSION_CARD_LABELS[c.type] || c.type}</span>
+        <button type="button" class="discussion-card-del" data-index="${i}" title="Remove card">×</button>
+      </div>
+      <textarea data-index="${i}" placeholder="Type here…">${esc(c.text || "")}</textarea>
+    `;
+    board.appendChild(el);
+  });
+}
+
+function discussionCardsMaxZ(){
+  return (state.discussionCards || []).reduce((m,c) => Math.max(m, c.z || 1), 1);
+}
+
+function clampToBoard(board, x, y){
+  const rect = board.getBoundingClientRect();
+  const maxX = Math.max(0, rect.width - DISCUSSION_CARD_W);
+  const maxY = Math.max(0, rect.height - DISCUSSION_CARD_H);
+  return { x: Math.min(Math.max(0, x), maxX), y: Math.min(Math.max(0, y), maxY) };
+}
+
+function addDiscussionCard(type, x, y){
+  state.discussionCards = state.discussionCards || [];
+  state.discussionCards.push({ type, x, y, z: discussionCardsMaxZ() + 1, text: "" });
+  renderDiscussionCards();
+  scheduleAutosave();
+}
+
+function bringDiscussionCardToFront(index){
+  if(!state.discussionCards || !state.discussionCards[index]) return;
+  const maxZ = discussionCardsMaxZ();
+  if((state.discussionCards[index].z || 1) >= maxZ && state.discussionCards.filter(c => (c.z||1) === maxZ).length === 1) return;
+  const newZ = maxZ + 1;
+  state.discussionCards[index].z = newZ;
+  const el = document.querySelector(`.discussion-card[data-index="${index}"]`);
+  if(el) el.style.zIndex = newZ;
+  scheduleAutosave();
+}
+
+document.getElementById("discussionBoard").addEventListener("input", e => {
+  if(e.target.tagName !== "TEXTAREA") return;
+  const i = e.target.dataset.index;
+  if(i === undefined) return;
+  state.discussionCards[+i].text = e.target.value;
+  scheduleAutosave();
+});
+
+document.getElementById("discussionBoard").addEventListener("click", e => {
+  const delBtn = e.target.closest(".discussion-card-del");
+  if(!delBtn) return;
+  state.discussionCards.splice(+delBtn.dataset.index, 1);
+  renderDiscussionCards();
+  scheduleAutosave();
+});
+
+// Clicking/dragging any part of a card brings it to the front first.
+document.getElementById("discussionBoard").addEventListener("mousedown", e => {
+  const cardEl = e.target.closest(".discussion-card");
+  if(!cardEl) return;
+  bringDiscussionCardToFront(+cardEl.dataset.index);
+});
+
+// Dragging an existing card around within the board.
+(function setupDiscussionCardDrag(){
+  let dragging = null; // { index, offsetX, offsetY, el, board }
+  document.getElementById("discussionBoard").addEventListener("mousedown", e => {
+    if(e.target.closest(".discussion-card-del")) return;
+    const header = e.target.closest(".discussion-card-header");
+    if(!header) return;
+    const el = header.closest(".discussion-card");
+    const board = document.getElementById("discussionBoard");
+    const rect = el.getBoundingClientRect();
+    dragging = { index:+el.dataset.index, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top, el, board };
+    e.preventDefault();
+  });
+  document.addEventListener("mousemove", e => {
+    if(!dragging) return;
+    const r = dragging.board.getBoundingClientRect();
+    const pos = clampToBoard(dragging.board, e.clientX - r.left - dragging.offsetX, e.clientY - r.top - dragging.offsetY);
+    dragging.el.style.left = pos.x + "px";
+    dragging.el.style.top = pos.y + "px";
+  });
+  document.addEventListener("mouseup", () => {
+    if(!dragging) return;
+    const { index, el } = dragging;
+    state.discussionCards[index].x = parseFloat(el.style.left) || 0;
+    state.discussionCards[index].y = parseFloat(el.style.top) || 0;
+    dragging = null;
+    scheduleAutosave();
+  });
+})();
+
+// Dragging a fresh card off one of the three piles onto the board.
+(function setupDiscussionPileDrag(){
+  let pileDrag = null; // { type, ghost, moved }
+
+  document.querySelectorAll(".discussion-pile").forEach(pile => {
+    pile.addEventListener("mousedown", e => {
+      const type = pile.dataset.type;
+      const ghost = document.createElement("div");
+      ghost.className = `discussion-card ${type} discussion-card-ghost`;
+      ghost.style.position = "fixed";
+      ghost.style.pointerEvents = "none";
+      ghost.style.width = DISCUSSION_CARD_W + "px";
+      ghost.style.zIndex = 9999;
+      ghost.innerHTML = `<div class="discussion-card-header"><span>${DISCUSSION_CARD_LABELS[type]}</span></div>`;
+      ghost.style.left = (e.clientX - 18) + "px";
+      ghost.style.top = (e.clientY - 10) + "px";
+      document.body.appendChild(ghost);
+      pileDrag = { type, ghost, moved:false };
+      e.preventDefault();
+    });
+  });
+
+  document.addEventListener("mousemove", e => {
+    if(!pileDrag) return;
+    pileDrag.moved = true;
+    pileDrag.ghost.style.left = (e.clientX - 18) + "px";
+    pileDrag.ghost.style.top = (e.clientY - 10) + "px";
+    const board = document.getElementById("discussionBoard");
+    const r = board.getBoundingClientRect();
+    const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    board.classList.toggle("drag-over", over);
+  });
+
+  document.addEventListener("mouseup", e => {
+    if(!pileDrag) return;
+    const { type, ghost, moved } = pileDrag;
+    pileDrag = null;
+    ghost.remove();
+    const board = document.getElementById("discussionBoard");
+    board.classList.remove("drag-over");
+    const r = board.getBoundingClientRect();
+    if(moved){
+      const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if(!over) return; // dropped off the board — cancel, no card added
+      const pos = clampToBoard(board, e.clientX - r.left - 18, e.clientY - r.top - 10);
+      addDiscussionCard(type, pos.x, pos.y);
+    } else {
+      // plain click on a pile (no drag): drop the card at a staggered default spot
+      const count = (state.discussionCards || []).length;
+      const pos = clampToBoard(board, 10 + (count % 5) * 16, 10 + (count % 4) * 14);
+      addDiscussionCard(type, pos.x, pos.y);
+    }
+  });
+})();
+
+/* Checklist — always live (not gated on edit mode). Parent items with a
+   sub-checklist derive their checked state from their sub-items. */
+function isItemDone(c){
+  if(c.has_subchecklist) return (c.subitems && c.subitems.length > 0) && c.subitems.every(s => isItemDone(s));
+  return !!c.checked;
+}
+function checkNoteLine(c){
+  if(!c.note) return "";
+  return `<div class="check-note-line">📝 ${esc(c.note)}</div>`;
+}
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+/* Calendar icon color: default (open, or no deadline) → "none"; completed
+   after its deadline → "late" (red); completed by its deadline → "ontime"
+   (green). completedDate falls back to today if the item was checked off
+   before this field existed. */
+function dueDateStatus(dueDate, completedDate, done){
+  if(!done || !dueDate) return "none";
+  const ref = completedDate || todayStr();
+  return ref > dueDate ? "late" : "ontime";
+}
+function calendarIconSvg(color){
+  return `<svg viewBox="0 0 24 24" width="19" height="19" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2.5" y="4" width="19" height="18" rx="3" fill="${color}"/>
+    <line x1="7.5" y1="2" x2="7.5" y2="6.5" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="16.5" y1="2" x2="16.5" y2="6.5" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M7.3 13.2l2.7 2.7L16.7 9.2" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+function linkIconSvg(color){
+  return `<svg viewBox="0 0 24 24" width="19" height="19" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <path d="M9.8 14.2l4.4-4.4" stroke="${color}" stroke-width="2.1" stroke-linecap="round"/>
+    <path d="M11.1 6.6l1.5-1.5a3.5 3.5 0 015 5l-1.5 1.5" stroke="${color}" stroke-width="2.1" stroke-linecap="round"/>
+    <path d="M12.9 17.4l-1.5 1.5a3.5 3.5 0 01-5-5l1.5-1.5" stroke="${color}" stroke-width="2.1" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* Small ring showing % complete — same visual as the portfolio overview
+   page's progress rings, scaled down to sit in a checklist row. */
+function ringSvg(pct, size, stroke){
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - Math.max(0, Math.min(100, pct)) / 100);
+  return `<span class="check-ring" title="${pct}% complete">
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle class="ring-track" cx="${size/2}" cy="${size/2}" r="${r}" stroke-width="${stroke}"></circle>
+      <circle class="ring-fill" cx="${size/2}" cy="${size/2}" r="${r}" stroke-width="${stroke}"
+        style="stroke-dasharray:${c};stroke-dashoffset:${offset};"></circle>
+    </svg>
+  </span>`;
+}
+
+/* Whether an item's person icon is shown. Explicit per-item field wins.
+   Otherwise, falls back to fallbackDefault (the resolved value of its
+   parent, for sub-items) or, for a top-level item, "internal items only".
+   Set automatically when an outlet is created (see addOutlet) and when a
+   sub-checklist is added to a sub-item (see the add-sub-row-btn handler),
+   and toggleable per item in edit mode (see checklistEditRowHtml /
+   subitemEditRowHtml). */
+function itemShowsAssignee(c, fallbackDefault){
+  if(c.show_assignee !== undefined && c.show_assignee !== null) return !!c.show_assignee;
+  return fallbackDefault !== undefined ? fallbackDefault : (c.list || "internal") === "internal";
+}
+
+/* Whether a sub-item's calendar icon is shown — same cascading pattern as
+   itemShowsAssignee, but sub-items default ON (the reference UI shows a
+   calendar on every sub-task unless explicitly turned off). Never
+   consulted for top-level items — those get the link icon instead. */
+function itemShowsDueDate(c, fallbackDefault){
+  if(c.show_due_date !== undefined && c.show_due_date !== null) return !!c.show_due_date;
+  return fallbackDefault !== undefined ? fallbackDefault : true;
+}
+
+/* Look up a checklist node (top-level item, sub-item, or sub-sub-item) by
+   its path — [i] for a top-level item, [i, si] for a sub-item, [i, si,
+   ssi] for a sub-item's own sub-item. Used by every checklist click/change
+   handler below so the same code works at any nesting depth. */
+function getChecklistNodeByPath(path){
+  let node = state.checklist[path[0]];
+  for(let d = 1; d < path.length; d++){
+    if(!node) return null;
+    node = (node.subitems || [])[path[d]];
+  }
+  return node;
+}
+
+/* Assignee icon + dropdown. Shown per itemShowsAssignee() above — item
+   itself when it has no sub-checklist, or on each sub-item (not the
+   parent) when it does. The icon is a CSS-drawn avatar silhouette; the
+   assigned name only shows in a tooltip on hover (via the title attribute
+   and the CSS ::after on .assignee-widget); the icon turns green once
+   assigned. */
+function assigneeWidgetHtml(path, assignee){
+  const names = state.assigneeNames || [];
+  const options = `
+    <button type="button" class="assignee-menu-option ${!assignee ? "is-selected" : ""}" data-name="">Unassigned</button>
+    ${names.map(n => `<button type="button" class="assignee-menu-option ${assignee === n ? "is-selected" : ""}" data-name="${esc(n)}">${esc(n)}</button>`).join("")}
+  `;
+  return `
+    <span class="assignee-widget" data-path="${path.join(",")}" ${assignee ? `data-name="${esc(assignee)}"` : ""}>
+      <button type="button" class="assignee-icon ${assignee ? "is-assigned" : ""}" title="${assignee ? esc(assignee) : "Assign to…"}"></button>
+      <span class="assignee-menu">${options}</span>
+    </span>`;
+}
+
+/* Calendar icon + popover — sub-checklist items only. Clicking it opens
+   the browser's native date picker to set/change the due date; color
+   reflects dueDateStatus() (default/green/red). */
+function dueDateWidgetHtml(path, dueDate, done, completedDate){
+  const status = dueDateStatus(dueDate, completedDate, done);
+  const color = status === "late" ? "var(--suit-red)" : status === "ontime" ? "var(--green)" : "var(--ink)";
+  const title = !dueDate ? "Set a due date" : (status === "late" ? `Completed after its ${dueDate} deadline` : status === "ontime" ? `Completed by its ${dueDate} deadline` : `Due ${dueDate} — click to change`);
+  return `
+    <span class="due-date-widget" data-path="${path.join(",")}">
+      <button type="button" class="due-date-icon" title="${esc(title)}">${calendarIconSvg(color)}</button>
+      <span class="due-date-menu">
+        <input type="date" class="due-date-input" value="${dueDate || ""}">
+        ${dueDate ? `<button type="button" class="due-date-clear">Clear date</button>` : ""}
+      </span>
+    </span>`;
+}
+
+/* Link icon + popover — top-level items only. Replaces the old plain-text
+   "available here" line; the URL can be set/changed/cleared from the icon
+   itself, live, or from the drive_link field in edit mode. */
+function linkWidgetHtml(path, url){
+  const color = url ? "var(--navy)" : "var(--line)";
+  return `
+    <span class="link-widget" data-path="${path.join(",")}">
+      <button type="button" class="link-icon" title="${url ? "Link set — click to view or change" : "Add a link"}">${linkIconSvg(color)}</button>
+      <span class="link-menu">
+        <input type="url" class="link-input" placeholder="https://…" value="${esc(url || "")}">
+        <div class="link-menu-row">
+          ${url ? `<a class="link-open" href="${esc(url)}" target="_blank" rel="noopener">Open ↗</a>` : `<span></span>`}
+          ${url ? `<button type="button" class="link-clear">Clear</button>` : ""}
+        </div>
+      </span>
+    </span>`;
+}
+
+function checklistItemHtml(item, path, inheritedShowAssignee, inheritedShowDueDate){
+  const done = isItemDone(item);
+  const isTop = path.length === 1;
+  const pathStr = path.join(",");
+  // cascadeShowAssignee keeps the old semantics (explicit if set, else true
+  // for internal items) and is what sub-items inherit as their own default
+  // — so sub-items keep showing the person icon as before. A top-level
+  // item's OWN icon, though, is now hidden unless explicitly turned back on
+  // in edit mode (show_assignee === true) — see checklistEditRowHtml.
+  const cascadeShowAssignee = itemShowsAssignee(item, inheritedShowAssignee);
+  const showOwnIcon = isTop ? (item.show_assignee === true) : cascadeShowAssignee;
+  // Nothing reserved for a parent row with its icon off, so its checkbox
+  // sits flush left; sub-items always reserve the slot (filled or empty)
+  // so sibling sub-items still line up in a column with each other.
+  const iconsHtml = (isTop && !showOwnIcon)
+    ? ""
+    : `<span class="check-icons"><span class="icon-slot-assignee">${showOwnIcon ? assigneeWidgetHtml(path, item.assignee) : ""}</span></span>`;
+  // Right side: top-level items get the link icon (add/remove in edit
+  // mode, off by default). Sub-items no longer show a calendar icon here
+  // — due dates only display on parent (has_subchecklist) rows now, next
+  // to the completion donut; cascadeShowDueDate is still threaded through
+  // to nested edit-mode rows below, it just no longer drives an icon here.
+  const cascadeShowDueDate = itemShowsDueDate(item, inheritedShowDueDate);
+  const showLink = isTop && item.show_drive_link === true;
+  const rightIconHtml = showLink
+    ? `<span class="icon-slot-right">${linkWidgetHtml(path, item.drive_link)}</span>`
+    : "";
+  if(item.has_subchecklist){
+    const collapsed = !!item._collapsed;
+    return `
+      <div class="check-block" data-path="${pathStr}">
+        <div class="check-item parent-derived">
+          <span class="check-header-icon">${dueDateWidgetHtml(path, item.due_date, done, item.completed_date)}</span>
+          ${ringSvg(itemPct(item), 17, 3)}
+          ${iconsHtml}
+          <span class="check-label-group">
+            <span class="check-label">${esc(item.label)}</span>
+            ${rightIconHtml}
+            <button type="button" class="check-collapse-btn ${collapsed ? "" : "is-open"}" data-path="${pathStr}" title="Toggle sub-checklist" aria-expanded="${collapsed ? "false" : "true"}">▸</button>
+          </span>
+        </div>
+        <div class="sub-check-list ${collapsed ? "is-collapsed" : ""}">
+          ${(item.subitems||[]).map((s,si) => checklistItemHtml(s, [...path, si], cascadeShowAssignee, cascadeShowDueDate)).join("") || `<div style="font-size:12px;color:var(--ink-soft)">No sub-items yet — add some in edit mode.</div>`}
+        </div>
+        ${isTop ? checkNoteLine(item) : ""}
+      </div>`;
+  }
+  return `
+    <div class="check-block" data-path="${pathStr}">
+      <div class="check-item ${done ? "is-checked" : ""}">
+        ${iconsHtml}
+        <input type="checkbox" ${done ? "checked" : ""}>
+        <span class="check-label-group">
+          <span class="check-label">${esc(item.label)}</span>
+          ${rightIconHtml}
+        </span>
+      </div>
+      ${isTop ? checkNoteLine(item) : ""}
+    </div>`;
+}
+function renderChecklist(){
+  ["internal","external"].forEach(list => {
+    const container = document.getElementById(list === "internal" ? "checklistInternal" : "checklistExternal");
+    const items = state.checklist
+      .map((c,i) => ({ c, i }))
+      .filter(x => (x.c.list || "internal") === list);
+    container.innerHTML = items.map(x => checklistItemHtml(x.c, [x.i])).join("")
+      || `<div style="font-size:13px;color:var(--ink-soft)">No ${list} items yet.</div>`;
+  });
+}
+
+/* Checklist view toggle — Overall shows both columns, Internal/External
+   isolate a single column full-width. Purely a display switch; edit mode
+   still shows both lists. */
+document.getElementById("checklistViewToggle").addEventListener("click", e => {
+  const btn = e.target.closest(".checklist-view-btn");
+  if(!btn) return;
+  document.querySelectorAll("#checklistViewToggle .checklist-view-btn").forEach(b => b.classList.toggle("is-active", b === btn));
+  const container = document.getElementById("checklist");
+  container.classList.remove("view-internal", "view-external");
+  const view = btn.dataset.view;
+  if(view !== "overall") container.classList.add("view-" + view);
+});
+
+function closeAllAssigneeMenus(){
+  document.querySelectorAll(".assignee-menu.is-open").forEach(m => m.classList.remove("is-open"));
+}
+function closeAllDueDateMenus(){
+  document.querySelectorAll(".due-date-menu.is-open").forEach(m => m.classList.remove("is-open"));
+}
+function closeAllLinkMenus(){
+  document.querySelectorAll(".link-menu.is-open").forEach(m => m.classList.remove("is-open"));
+}
+document.addEventListener("click", e => {
+  if(!e.target.closest(".assignee-widget")) closeAllAssigneeMenus();
+  if(!e.target.closest(".due-date-widget")) closeAllDueDateMenus();
+  if(!e.target.closest(".link-widget")) closeAllLinkMenus();
+});
+
+async function persistChecklistItemLive(item){
+  if(!item.id || usingDemo) return;
+  try{
+    const client = await getClient();
+    await client.from("checklist_items").update({
+      checked: item.checked, subitems: item.subitems || [], assignee: item.assignee || null,
+      drive_link: item.drive_link || null, due_date: item.due_date || null, completed_date: item.completed_date || null
+    }).eq("id", item.id);
+  }catch(err){
+    console.warn("Couldn't save checklist update:", err.message || err);
+  }
+}
+
+/* Assignee icon (open/close the dropdown) + option selection, calendar
+   icon (open/close the date popover) + date select/clear, and link icon
+   (open/close the URL popover) + URL clear — all always live, writing
+   through immediately like checkbox ticking does. Every handler resolves
+   its node via data-path, so this works the same at any nesting depth. */
+document.getElementById("checklist").addEventListener("click", async e => {
+  const optBtn = e.target.closest(".assignee-menu-option");
+  if(optBtn){
+    const widget = optBtn.closest(".assignee-widget");
+    const path = widget.dataset.path.split(",").map(Number);
+    const node = getChecklistNodeByPath(path);
+    if(!node) return;
+    node.assignee = optBtn.dataset.name || null;
+    renderChecklist();
+    scheduleAutosave();
+    await persistChecklistItemLive(state.checklist[path[0]]);
+    return;
+  }
+  const iconBtn = e.target.closest(".assignee-icon");
+  if(iconBtn){
+    e.stopPropagation();
+    const menu = iconBtn.closest(".assignee-widget").querySelector(".assignee-menu");
+    const wasOpen = menu.classList.contains("is-open");
+    closeAllAssigneeMenus(); closeAllDueDateMenus(); closeAllLinkMenus();
+    if(!wasOpen) menu.classList.add("is-open");
+    return;
+  }
+  const clearDateBtn = e.target.closest(".due-date-clear");
+  if(clearDateBtn){
+    const widget = clearDateBtn.closest(".due-date-widget");
+    const path = widget.dataset.path.split(",").map(Number);
+    const node = getChecklistNodeByPath(path);
+    if(!node) return;
+    node.due_date = null;
+    if(path.length === 1){ syncGanttWithChecklistDueDate(node); renderGanttReadonly(); if(editMode) renderGanttEdit(); }
+    renderChecklist();
+    scheduleAutosave();
+    await persistChecklistItemLive(state.checklist[path[0]]);
+    return;
+  }
+  const dateIconBtn = e.target.closest(".due-date-icon");
+  if(dateIconBtn){
+    e.stopPropagation();
+    const menu = dateIconBtn.closest(".due-date-widget").querySelector(".due-date-menu");
+    const wasOpen = menu.classList.contains("is-open");
+    closeAllAssigneeMenus(); closeAllDueDateMenus(); closeAllLinkMenus();
+    if(!wasOpen){
+      menu.classList.add("is-open");
+      const input = menu.querySelector(".due-date-input");
+      if(input){
+        input.focus();
+        if(input.showPicker){ try{ input.showPicker(); }catch(_){ /* not user-triggered in some browsers */ } }
+      }
+    }
+    return;
+  }
+  const clearLinkBtn = e.target.closest(".link-clear");
+  if(clearLinkBtn){
+    const widget = clearLinkBtn.closest(".link-widget");
+    const path = widget.dataset.path.split(",").map(Number);
+    const node = getChecklistNodeByPath(path);
+    if(!node) return;
+    node.drive_link = null;
+    renderChecklist();
+    scheduleAutosave();
+    await persistChecklistItemLive(state.checklist[path[0]]);
+    return;
+  }
+  const linkIconBtn = e.target.closest(".link-icon");
+  if(linkIconBtn){
+    e.stopPropagation();
+    const menu = linkIconBtn.closest(".link-widget").querySelector(".link-menu");
+    const wasOpen = menu.classList.contains("is-open");
+    closeAllAssigneeMenus(); closeAllDueDateMenus(); closeAllLinkMenus();
+    if(!wasOpen){
+      menu.classList.add("is-open");
+      const input = menu.querySelector(".link-input");
+      if(input) input.focus();
+    }
+  }
+});
+document.getElementById("checklist").addEventListener("change", async e => {
+  if(e.target.matches(".due-date-input")){
+    const widget = e.target.closest(".due-date-widget");
+    const path = widget.dataset.path.split(",").map(Number);
+    const node = getChecklistNodeByPath(path);
+    if(!node) return;
+    node.due_date = e.target.value || null;
+    if(path.length === 1){ syncGanttWithChecklistDueDate(node); renderGanttReadonly(); if(editMode) renderGanttEdit(); }
+    renderChecklist();
+    scheduleAutosave();
+    await persistChecklistItemLive(state.checklist[path[0]]);
+    return;
+  }
+  if(e.target.matches(".link-input")){
+    const widget = e.target.closest(".link-widget");
+    const path = widget.dataset.path.split(",").map(Number);
+    const node = getChecklistNodeByPath(path);
+    if(!node) return;
+    node.drive_link = e.target.value.trim() || null;
+    renderChecklist();
+    scheduleAutosave();
+    await persistChecklistItemLive(state.checklist[path[0]]);
+  }
+});
+
+
+/* Sticky notes — freeform draggable notes placed anywhere on the page.
+   Always live (not gated on edit mode); position + text autosave. */
+function renderStickyNotes(){
+  const layer = document.getElementById("stickyNotesLayer");
+  if(!layer || !state.stickyNotes) return;
+  layer.innerHTML = state.stickyNotes.map((n,i) => `
+    <div class="sticky-note" data-index="${i}" style="left:${n.x}px; top:${n.y}px; z-index:${n.z || 1}; --sticky-color:${esc(n.color || "#FFF6A8")};">
+      <div class="sticky-note-handle" data-index="${i}">
+        <button type="button" class="sticky-note-del" data-index="${i}" title="Remove note">×</button>
+      </div>
+      <textarea data-index="${i}" placeholder="Type a note…">${esc(n.text || "")}</textarea>
+    </div>
+  `).join("");
+}
+
+// Highest z-index currently in use across all sticky notes, so a newly
+// front-brought (or newly created) note always lands above every other note.
+function stickyNotesMaxZ(){
+  return (state.stickyNotes || []).reduce((m,n) => Math.max(m, n.z || 1), 1);
+}
+
+// Move the note at `index` to the front (top of the stack) and reflect it
+// immediately in the DOM without a full re-render, so an in-progress drag
+// or text edit isn't interrupted.
+function bringStickyNoteToFront(index){
+  if(!state.stickyNotes || !state.stickyNotes[index]) return;
+  const maxZ = stickyNotesMaxZ();
+  if((state.stickyNotes[index].z || 1) >= maxZ && state.stickyNotes.filter(n => (n.z||1) === maxZ).length === 1) return;
+  const newZ = maxZ + 1;
+  state.stickyNotes[index].z = newZ;
+  const el = document.querySelector(`.sticky-note[data-index="${index}"]`);
+  if(el) el.style.zIndex = newZ;
+  scheduleAutosave();
+}
+
+document.getElementById("addStickyNoteBtn").addEventListener("click", () => {
+  state.stickyNotes = state.stickyNotes || [];
+  const offset = (state.stickyNotes.length % 6) * 18;
+  state.stickyNotes.push({
+    x: window.scrollX + 140 + offset,
+    y: window.scrollY + 140 + offset,
+    text: "",
+    color: "#FFF6A8",
+    z: stickyNotesMaxZ() + 1
+  });
+  renderStickyNotes();
+  scheduleAutosave();
+});
+
+document.getElementById("stickyNotesLayer").addEventListener("input", e => {
+  const i = e.target.dataset.index;
+  if(e.target.tagName !== "TEXTAREA" || i === undefined) return;
+  state.stickyNotes[+i].text = e.target.value;
+  scheduleAutosave();
+});
+
+document.getElementById("stickyNotesLayer").addEventListener("click", e => {
+  const delBtn = e.target.closest(".sticky-note-del");
+  if(!delBtn) return;
+  state.stickyNotes.splice(+delBtn.dataset.index, 1);
+  renderStickyNotes();
+  scheduleAutosave();
+});
+
+// Any interaction with a note — dragging it, clicking into the textarea,
+// clicking the handle — brings it to the front of the stack first.
+document.getElementById("stickyNotesLayer").addEventListener("mousedown", e => {
+  const noteEl = e.target.closest(".sticky-note");
+  if(!noteEl) return;
+  bringStickyNoteToFront(+noteEl.dataset.index);
+});
+
+(function setupStickyNoteDrag(){
+  let dragging = null; // { index, offsetX, offsetY, el }
+  document.getElementById("stickyNotesLayer").addEventListener("mousedown", e => {
+    const handle = e.target.closest(".sticky-note-handle");
+    if(!handle) return;
+    const el = handle.closest(".sticky-note");
+    const rect = el.getBoundingClientRect();
+    dragging = {
+      index: +handle.dataset.index,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      el
+    };
+    e.preventDefault();
+  });
+  document.addEventListener("mousemove", e => {
+    if(!dragging) return;
+    const x = e.clientX + window.scrollX - dragging.offsetX;
+    const y = e.clientY + window.scrollY - dragging.offsetY;
+    dragging.el.style.left = x + "px";
+    dragging.el.style.top = y + "px";
+  });
+  document.addEventListener("mouseup", () => {
+    if(!dragging) return;
+    const rect = dragging.el.getBoundingClientRect();
+    state.stickyNotes[dragging.index].x = rect.left + window.scrollX;
+    state.stickyNotes[dragging.index].y = rect.top + window.scrollY;
+    dragging = null;
+    scheduleAutosave();
+  });
+})();
+
+function photoTile(p, weekLabelText, editable){
+  const badge = p.source === "drive" ? "Drive" : "Upload";
+  const alt = p.caption || `Site photo, ${weekLabelText}`;
+  return `
+    <div class="photo-tile" data-id="${p.id ?? ""}" data-ref="${esc(p.ref ?? "")}" data-source="${esc(p.source ?? "")}">
+      <img src="${p.url}" loading="lazy" alt="${esc(alt)}">
+      <span class="photo-src">${badge}</span>
+      ${editable ? `<button class="photo-del" title="Delete photo">×</button>` : ""}
+    </div>`;
+}
+
+let activePhotoWeek = null;
+
+function renderPhotos(){
+  const editing = editMode && !usingDemo;
+  const weeks = mergeWeekKeys(state.photoWeeks || [], defaultWeekKeys());
+  const [, thisWeekKey] = defaultWeekKeys();
+  if(!activePhotoWeek || !weeks.includes(activePhotoWeek)){
+    activePhotoWeek = weeks.includes(thisWeekKey) ? thisWeekKey : weeks[weeks.length-1];
+  }
+
+  document.getElementById("photoTabs").innerHTML = weeks.map(key => {
+    const isCurrent = key === thisWeekKey;
+    const removable = editing && !defaultWeekKeys().includes(key) && (state.photos[key]||[]).length === 0;
+    return `
+      <span class="tab-wrap">
+        <button class="tab-btn${key===activePhotoWeek?" active":""}" data-week="${key}">${weekLabel(key)}${isCurrent ? '<span class="tab-current-dot" title="Current week"></span>' : ""}</button>${removable ? `<button class="tab-remove" data-remove-week="${key}" title="Remove this week">×</button>` : ""}
+      </span>`;
+  }).join("");
+
+  document.getElementById("photoTabsets").innerHTML = weeks.map(key => `
+    <div class="photo-tabset${key===activePhotoWeek?" active":""}" id="tab-${key}">
+      <div class="photo-grid" data-week-grid="${key}">${(state.photos[key]||[]).map(p=>photoTile(p, weekLabel(key), editing)).join("")}</div>
+      <div class="photo-upload-row" data-week-upload="${key}" style="display:${editing?"flex":"none"};">${editing ? `
+        <label class="file-label">Upload photo<input type="file" accept="image/*" data-week="${key}" class="photo-file-input"></label>
+        <input type="text" placeholder="Paste Google Drive link" class="drive-link-input" data-week="${key}">
+        <button class="btn btn-outline drive-add-btn" data-week="${key}">Add</button>
+        <span class="upload-status" data-status="${key}"></span>
+      ` : ""}</div>
+    </div>`).join("");
+
+  document.getElementById("addWeekRow").style.display = editing ? "flex" : "none";
+  const addBtn = document.getElementById("addWeekBtn");
+  if(addBtn) addBtn.textContent = `+ Add week (${weekLabel(nextWeekKeyAfter(weeks))})`;
+
+  updateTabsNav();
+  const activeBtn = document.querySelector("#photoTabs .tab-btn.active");
+  if(activeBtn) activeBtn.scrollIntoView({inline:"nearest", block:"nearest"});
+}
+
+/* Show/hide + enable/disable the carousel arrows for the week tabs,
+   based on whether the tab row actually overflows its container. */
+function updateTabsNav(){
+  const track = document.getElementById("photoTabs");
+  const prev = document.getElementById("photoTabsPrev");
+  const next = document.getElementById("photoTabsNext");
+  if(!track || !prev || !next) return;
+  const overflowing = track.scrollWidth > track.clientWidth + 1;
+  prev.hidden = !overflowing;
+  next.hidden = !overflowing;
+  if(!overflowing) return;
+  prev.disabled = track.scrollLeft <= 0;
+  next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+}
+
+/* Auto-delay: if target live (or the originally planned target live) has
+   passed and the project hasn't been marked complete, force status to
+   "delayed". Runs on every render so date edits pick it up immediately. */
+function applyAutoStatus(){
+  const p = state && state.project;
+  if(!p || p.status === "complete") return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const isOverdue = [p.target_live, p.original_target_live].some(d => {
+    if(!d) return false;
+    const dt = new Date(d);
+    return !isNaN(dt) && dt < today;
+  });
+  if(isOverdue && p.status !== "delayed"){
+    p.status = "delayed";
+    if(!usingDemo){
+      getClient()
+        .then(client => client.from("projects").update({status:"delayed"}).eq("id", PROJECT_ID))
+        .catch(err => console.warn("Couldn't auto-update status:", err.message || err));
+    }
+  }
+}
+
+function renderAll(){
+  applyAutoStatus();
+  renderHeaderReadonly();
+  renderInfoReadonly();
+  renderPartiesReadonly();
+  renderTimelineReadonly();
+  renderNotesReadonly();
+  renderProgressFromChecklist();
+  renderChecklist();
+  renderGanttReadonly();
+  renderStickyNotes();
+  renderDiscussionCards();
+  document.getElementById("checklistEdit").style.display = editMode ? "grid" : "none";
+  document.getElementById("assigneeNamesEdit").style.display = editMode ? "block" : "none";
+  renderPhotos();
+  document.getElementById("lastSync").textContent = new Date().toLocaleString("en-GB",{dateStyle:"medium", timeStyle:"short"});
+  if(editMode) renderEditForms();
+}
+
+/* ---------------------------------------------------------------
+   RENDER: EDIT FORMS
+--------------------------------------------------------------- */
+function renderEditForms(){
+  const { project } = state;
+
+  document.getElementById("projectTitle").style.display = "none";
+  const titleInput = document.getElementById("projectTitleInput");
+  titleInput.style.display = "block";
+  titleInput.value = project.name || "";
+
+  document.getElementById("statusPill").style.display = "none";
+  const statusSelect = document.getElementById("statusSelect");
+  statusSelect.style.display = "inline-block";
+  statusSelect.value = project.status || "on_track";
+
+  document.getElementById("infoTable").style.display = "none";
+  const infoEdit = document.getElementById("infoEdit");
+  infoEdit.style.display = "block";
+  infoEdit.innerHTML = `
+    <div class="field-row"><label>Project code</label><input data-field="code" value="${esc(project.code)}"></div>
+    <div class="field-row"><label>Construction period start</label><input type="date" data-field="period_start" value="${toInputDate(project.period_start)}"></div>
+    <div class="field-row"><label>Construction period end</label><input type="date" data-field="period_end" value="${toInputDate(project.period_end)}"></div>
+    <div class="field-row"><label>Target live</label><input type="date" data-field="target_live" value="${toInputDate(project.target_live)}"></div>
+    <div class="field-row"><label>Original target live</label><input type="date" data-field="original_target_live" value="${toInputDate(project.original_target_live)}"></div>
+    <div id="infoExtraRows" style="margin-top:8px; border-top:1px solid var(--line-soft); padding-top:10px;"></div>
+  `;
+  renderInfoExtraEdit();
+
+  renderPartiesEdit();
+  renderTimelineEdit();
+  renderChecklistEdit();
+  renderGanttEdit();
+  renderAssigneeNamesEdit();
+  renderNotesEdit();
+}
+
+function renderPartiesEdit(){
+  document.getElementById("partiesList").style.display = "none";
+  const el = document.getElementById("partiesEdit");
+  el.style.display = "block";
+  el.innerHTML = state.parties.map((p,i) => `
+    <div class="edit-row" data-index="${i}">
+      <div class="row-order">
+        <button class="party-up" data-index="${i}" ${i===0 ? "disabled" : ""} title="Move up">▲</button>
+        <button class="party-down" data-index="${i}" ${i===state.parties.length-1 ? "disabled" : ""} title="Move down">▼</button>
+      </div>
+      <input class="w-name" data-field="role" placeholder="Type / role (e.g. Main contractor — civil)" value="${esc(p.role)}">
+      <input class="w-name" data-field="name" placeholder="Party name" value="${esc(p.name)}">
+      <button class="row-del" data-index="${i}">×</button>
+    </div>
+  `).join("") + `<button class="add-row-btn" id="addPartyBtn">+ Add party</button>`;
+}
+
+function renderInfoExtraEdit(){
+  const el = document.getElementById("infoExtraRows");
+  if(!el) return;
+  el.innerHTML = (state.infoExtra||[]).map((f,i) => `
+    <div class="edit-row info-extra-row" data-index="${i}">
+      <div class="row-order">
+        <button class="info-up" data-index="${i}" ${i===0 ? "disabled" : ""} title="Move up">▲</button>
+        <button class="info-down" data-index="${i}" ${i===state.infoExtra.length-1 ? "disabled" : ""} title="Move down">▼</button>
+      </div>
+      <input class="w-name" data-field="label" placeholder="Topic (e.g. Site area)" value="${esc(f.label)}">
+      ${f.isDate
+        ? `<input type="date" data-field="value" value="${toInputDate(f.value)}">`
+        : `<input class="w-name" data-field="value" placeholder="Detail" value="${esc(f.value)}">`
+      }
+      <label class="inline" style="font-size:11.5px; color:var(--ink-soft); display:flex; align-items:center; gap:4px; flex:none;">
+        <input type="checkbox" data-field="isDate" ${f.isDate ? "checked" : ""}> Date
+      </label>
+      <button class="row-del" data-index="${i}">×</button>
+    </div>
+  `).join("") + `<button class="add-row-btn" id="addInfoBtn">+ Add topic</button>`;
+}
+
+function renderTimelineEdit(){
+  document.getElementById("timeline").style.display = "none";
+  const el = document.getElementById("timelineEdit");
+  el.style.display = "block";
+  el.innerHTML = state.milestones.map((m,i) => `
+    <div class="edit-row" data-index="${i}">
+      <div class="row-order">
+        <button class="milestone-up" data-index="${i}" ${i===0 ? "disabled" : ""} title="Move up">▲</button>
+        <button class="milestone-down" data-index="${i}" ${i===state.milestones.length-1 ? "disabled" : ""} title="Move down">▼</button>
+      </div>
+      <input class="w-name" data-field="name" placeholder="Milestone" value="${esc(m.name)}">
+      <input type="date" data-field="date" value="${toInputDate(m.date)}">
+      <select data-field="state">
+        <option value="done" ${m.state==='done'?'selected':''}>Done</option>
+        <option value="active" ${m.state==='active'?'selected':''}>Active</option>
+        <option value="upcoming" ${m.state==='upcoming'?'selected':''}>Upcoming</option>
+      </select>
+      <button class="row-del" data-index="${i}">×</button>
+    </div>
+  `).join("") + `<button class="add-row-btn" id="addMilestoneBtn">+ Add milestone</button>`;
+}
+
+function subitemEditRowHtml(s, i, si, isFirst, isLast, inheritedShowAssignee, inheritedShowDueDate){
+  return `
+    <div class="sub-edit-row" data-index="${i}" data-sub-index="${si}">
+      <div class="row-top">
+        <div class="reorder-btns">
+          <button type="button" class="sub-row-move-btn" data-index="${i}" data-sub-index="${si}" data-dir="-1" title="Move up" ${isFirst ? "disabled" : ""}>▲</button>
+          <button type="button" class="sub-row-move-btn" data-index="${i}" data-sub-index="${si}" data-dir="1" title="Move down" ${isLast ? "disabled" : ""}>▼</button>
+        </div>
+        <input type="text" data-sub-field="label" placeholder="Sub-item" value="${esc(s.label)}">
+        <label class="inline"><input type="checkbox" data-sub-field="has_subchecklist" ${s.has_subchecklist ? "checked" : ""}> Has sub-checklist</label>
+        <button class="sub-row-del" data-index="${i}" data-sub-index="${si}">×</button>
+      </div>
+      ${s.has_subchecklist ? `
+        <textarea data-sub-field="subitems" placeholder="One sub-item per line">${esc((s.subitems||[]).map(x=>x.label).join("\n"))}</textarea>
+        <div class="options-hint">This sub-item is only marked done once every item below is checked.</div>
+      ` : ""}
+      <label class="inline" style="margin-top:4px;">
+        <input type="checkbox" data-sub-field="show_assignee" ${itemShowsAssignee(s, inheritedShowAssignee) ? "checked" : ""}>
+        Show person icon${s.has_subchecklist ? " (on each item below)" : ""}
+      </label>
+      <label class="inline" style="margin-top:4px;">
+        <input type="checkbox" data-sub-field="show_due_date" ${itemShowsDueDate(s, inheritedShowDueDate) ? "checked" : ""}>
+        Show calendar icon${s.has_subchecklist ? " (on each item below)" : ""}
+      </label>
+    </div>
+  `;
+}
+
+function checklistEditRowHtml(c, i, isFirst, isLast){
+  // showAssignee/showDueDate are the cascade values sub-items inherit as
+  // their own default (person icon "on for internal", calendar always
+  // "on"). showOwnIcon is what actually controls whether THIS item's own
+  // icon shows — parent items stay hidden unless explicitly turned on.
+  const showAssignee = itemShowsAssignee(c);
+  const showDueDate = itemShowsDueDate(c);
+  const showOwnIcon = c.show_assignee === true;
+  const showLink = c.show_drive_link === true;
+  return `
+    <div class="check-edit-row" data-index="${i}">
+      <div class="row-top">
+        <div class="reorder-btns">
+          <button type="button" class="row-move-btn" data-index="${i}" data-dir="-1" title="Move up" ${isFirst ? "disabled" : ""}>▲</button>
+          <button type="button" class="row-move-btn" data-index="${i}" data-dir="1" title="Move down" ${isLast ? "disabled" : ""}>▼</button>
+        </div>
+        <input type="text" data-field="label" placeholder="Checklist item" value="${esc(c.label)}">
+        <label class="inline"><input type="checkbox" data-field="has_subchecklist" ${c.has_subchecklist ? "checked" : ""}> Has sub-checklist</label>
+        <button class="row-del" data-index="${i}">×</button>
+      </div>
+      ${c.has_subchecklist ? `
+        <div class="sub-edit-list" data-index="${i}">
+          ${(c.subitems||[]).map((s,si) => subitemEditRowHtml(s, i, si, si === 0, si === c.subitems.length - 1, showAssignee, showDueDate)).join("") || `<div class="options-hint">No sub-items yet.</div>`}
+        </div>
+        <button type="button" class="add-sub-row-btn" data-index="${i}">+ Add sub-item</button>
+        <div class="options-hint">This item is only marked done once every sub-item below is checked. A sub-item can have its own sub-checklist too — tick "Has sub-checklist" on it.</div>
+      ` : ""}
+      <label class="inline" style="margin:4px 0 6px;">
+        <input type="checkbox" data-field="show_assignee" ${showOwnIcon ? "checked" : ""}>
+        Show person icon on this item${c.has_subchecklist ? " (sub-items below keep their own icon regardless)" : ""}
+      </label>
+      <label class="inline" style="margin:0 0 6px;">
+        <input type="checkbox" data-field="show_drive_link" ${showLink ? "checked" : ""}>
+        Show link icon on this item
+      </label>
+      <input type="text" class="drive-link-field" data-field="drive_link" placeholder="Link URL (optional)" value="${esc(c.drive_link || "")}">
+      <input type="text" class="drive-link-field" data-field="note" placeholder="Note (optional)" value="${esc(c.note || "")}">
+    </div>
+  `;
+}
+function renderChecklistEdit(){
+  ["internal","external"].forEach(list => {
+    const el = document.getElementById(list === "internal" ? "checklistEditInternal" : "checklistEditExternal");
+    const items = state.checklist
+      .map((c,i) => ({ c, i }))
+      .filter(x => (x.c.list || "internal") === list);
+    el.innerHTML = items.map((x, pos) => checklistEditRowHtml(x.c, x.i, pos === 0, pos === items.length - 1)).join("");
+  });
+}
+
+/* The pool of names selectable from the person-icon dropdown on internal
+   checklist items — editable here, in edit mode. */
+function renderAssigneeNamesEdit(){
+  const el = document.getElementById("assigneeNamesEditList");
+  if(!el) return;
+  el.innerHTML = (state.assigneeNames || []).map((name,i) => `
+    <div class="edit-row" data-index="${i}">
+      <input class="w-name" data-field="name" placeholder="Name" value="${esc(name)}">
+      <button class="row-del" data-index="${i}">×</button>
+    </div>
+  `).join("");
+}
+document.getElementById("assigneeNamesEditList").addEventListener("input", e => {
+  if(e.target.dataset.field !== "name") return;
+  const row = e.target.closest(".edit-row"); if(!row) return;
+  state.assigneeNames[+row.dataset.index] = e.target.value;
+  scheduleAutosave();
+});
+document.getElementById("assigneeNamesEditList").addEventListener("click", e => {
+  const btn = e.target.closest(".row-del"); if(!btn) return;
+  state.assigneeNames.splice(+btn.dataset.index, 1);
+  renderAssigneeNamesEdit();
+  renderChecklist();
+  scheduleAutosave();
+});
+document.getElementById("addAssigneeNameBtn").addEventListener("click", () => {
+  state.assigneeNames = state.assigneeNames || [];
+  state.assigneeNames.push("New name");
+  renderAssigneeNamesEdit();
+  scheduleAutosave();
+});
+
+/* Move a checklist item up/down within its own list (internal or external
+   items don't shuffle relative to each other). */
+function moveChecklistItem(trueIndex, dir){
+  const item = state.checklist[trueIndex];
+  if(!item) return;
+  const list = item.list || "internal";
+  const sameListIndices = state.checklist
+    .map((c,i) => i)
+    .filter(i => (state.checklist[i].list || "internal") === list);
+  const pos = sameListIndices.indexOf(trueIndex);
+  const swapPos = pos + dir;
+  if(swapPos < 0 || swapPos >= sameListIndices.length) return;
+  const swapIndex = sameListIndices[swapPos];
+  [state.checklist[trueIndex], state.checklist[swapIndex]] = [state.checklist[swapIndex], state.checklist[trueIndex]];
+  renderChecklistEdit(); renderChecklist(); renderProgressFromChecklist(); scheduleAutosave();
+}
+
+/* Move a sub-item up/down within its parent's sub-checklist. */
+function moveSubitem(itemIndex, subIndex, dir){
+  const subitems = state.checklist[itemIndex] && state.checklist[itemIndex].subitems;
+  if(!subitems) return;
+  const swapIndex = subIndex + dir;
+  if(swapIndex < 0 || swapIndex >= subitems.length) return;
+  [subitems[subIndex], subitems[swapIndex]] = [subitems[swapIndex], subitems[subIndex]];
+  renderChecklistEdit(); renderChecklist(); renderProgressFromChecklist(); scheduleAutosave();
+}
+
+function renderNotesEdit(){
+  document.getElementById("notesGrid").style.display = "none";
+  const el = document.getElementById("notesEdit");
+  el.style.display = "block";
+  el.innerHTML = state.notes.map((n,i) => `
+    <div class="edit-row" data-index="${i}" style="align-items:flex-start;">
+      <input class="w-name" data-field="heading" placeholder="Heading" value="${esc(n.heading)}">
+      <textarea data-field="bodyText" placeholder="One bullet per line">${esc(n.body.join("\n"))}</textarea>
+      <button class="row-del" data-index="${i}">×</button>
+    </div>
+  `).join("") + `<button class="add-row-btn" id="addNoteBtn">+ Add note</button>`;
+}
+
+/* ---------------------------------------------------------------
+   EVENT DELEGATION — STRUCTURAL EDIT INPUTS
+--------------------------------------------------------------- */
+document.getElementById("projectTitleInput").addEventListener("input", e => { state.project.name = e.target.value; scheduleAutosave(); });
+document.getElementById("statusSelect").addEventListener("change", e => { state.project.status = e.target.value; scheduleAutosave(); });
+
+document.getElementById("infoEdit").addEventListener("input", e => {
+  const extraRow = e.target.closest(".info-extra-row");
+  if(extraRow){
+    state.infoExtra[+extraRow.dataset.index][e.target.dataset.field] = e.target.value;
+    scheduleAutosave();
+    return;
+  }
+  const field = e.target.dataset.field;
+  if(field) state.project[field] = e.target.value;
+  scheduleAutosave();
+});
+document.getElementById("infoEdit").addEventListener("change", e => {
+  if(e.target.dataset.field !== "isDate") return;
+  const extraRow = e.target.closest(".info-extra-row"); if(!extraRow) return;
+  const item = state.infoExtra[+extraRow.dataset.index];
+  item.isDate = e.target.checked;
+  if(item.isDate && isNaN(new Date(item.value))) item.value = "";
+  renderInfoExtraEdit();
+  scheduleAutosave();
+});
+document.getElementById("infoEdit").addEventListener("click", e => {
+  if(e.target.id === "addInfoBtn"){
+    state.infoExtra = state.infoExtra || [];
+    state.infoExtra.push({label:"", value:""});
+    renderInfoExtraEdit(); scheduleAutosave();
+    return;
+  }
+  const upBtn = e.target.closest(".info-up");
+  if(upBtn){
+    const i = +upBtn.dataset.index;
+    [state.infoExtra[i-1], state.infoExtra[i]] = [state.infoExtra[i], state.infoExtra[i-1]];
+    renderInfoExtraEdit(); scheduleAutosave();
+    return;
+  }
+  const downBtn = e.target.closest(".info-down");
+  if(downBtn){
+    const i = +downBtn.dataset.index;
+    [state.infoExtra[i], state.infoExtra[i+1]] = [state.infoExtra[i+1], state.infoExtra[i]];
+    renderInfoExtraEdit(); scheduleAutosave();
+    return;
+  }
+  const btn = e.target.closest(".row-del"); if(!btn) return;
+  const extraRow = btn.closest(".info-extra-row"); if(!extraRow) return;
+  state.infoExtra.splice(+extraRow.dataset.index, 1);
+  renderInfoExtraEdit(); scheduleAutosave();
+});
+
+document.getElementById("partiesEdit").addEventListener("input", e => {
+  const row = e.target.closest(".edit-row"); if(!row) return;
+  state.parties[+row.dataset.index][e.target.dataset.field] = e.target.value;
+  scheduleAutosave();
+});
+document.getElementById("partiesEdit").addEventListener("click", e => {
+  if(e.target.id === "addPartyBtn"){
+    state.parties.push({role:"", name:""});
+    renderPartiesEdit(); scheduleAutosave();
+    return;
+  }
+  const upBtn = e.target.closest(".party-up");
+  if(upBtn){
+    const i = +upBtn.dataset.index;
+    [state.parties[i-1], state.parties[i]] = [state.parties[i], state.parties[i-1]];
+    renderPartiesEdit(); scheduleAutosave();
+    return;
+  }
+  const downBtn = e.target.closest(".party-down");
+  if(downBtn){
+    const i = +downBtn.dataset.index;
+    [state.parties[i], state.parties[i+1]] = [state.parties[i+1], state.parties[i]];
+    renderPartiesEdit(); scheduleAutosave();
+    return;
+  }
+  const btn = e.target.closest(".row-del"); if(!btn) return;
+  state.parties.splice(+btn.dataset.index, 1);
+  renderPartiesEdit(); scheduleAutosave();
+});
+
+document.getElementById("timelineEdit").addEventListener("input", e => {
+  const row = e.target.closest(".edit-row"); if(!row) return;
+  const idx = +row.dataset.index, field = e.target.dataset.field;
+  if(field === "name"){
+    const oldName = state.milestones[idx].name;
+    state.milestones[idx].name = e.target.value;
+    // Same rename-follow as the checklist label handler above — keeps a
+    // linked gantt task's label-based match alive through a rename.
+    if(state.ganttTasks){
+      const linked = state.ganttTasks.find(t => t.source_type === "milestone" && t.source_label === oldName);
+      if(linked){ linked.source_label = e.target.value; linked.label = e.target.value; }
+    }
+    renderGanttReadonly(); if(editMode) renderGanttEdit();
+  } else {
+    state.milestones[idx][field] = e.target.value;
+  }
+  scheduleAutosave();
+});
+document.getElementById("timelineEdit").addEventListener("click", e => {
+  if(e.target.id === "addMilestoneBtn"){
+    state.milestones.push({name:"", date:"", state:"upcoming"});
+    renderTimelineEdit(); scheduleAutosave();
+    return;
+  }
+  const upBtn = e.target.closest(".milestone-up");
+  if(upBtn){
+    const i = +upBtn.dataset.index;
+    [state.milestones[i-1], state.milestones[i]] = [state.milestones[i], state.milestones[i-1]];
+    renderTimelineEdit(); scheduleAutosave();
+    return;
+  }
+  const downBtn = e.target.closest(".milestone-down");
+  if(downBtn){
+    const i = +downBtn.dataset.index;
+    [state.milestones[i], state.milestones[i+1]] = [state.milestones[i+1], state.milestones[i]];
+    renderTimelineEdit(); scheduleAutosave();
+    return;
+  }
+  const btn = e.target.closest(".row-del"); if(!btn) return;
+  state.milestones.splice(+btn.dataset.index, 1);
+  renderTimelineEdit(); scheduleAutosave();
+});
+
+document.getElementById("notesEdit").addEventListener("input", e => {
+  const row = e.target.closest(".edit-row"); if(!row) return;
+  const idx = +row.dataset.index;
+  const field = e.target.dataset.field;
+  if(field === "bodyText"){
+    state.notes[idx].body = e.target.value.split("\n").map(s=>s.trim()).filter(Boolean);
+  } else {
+    state.notes[idx][field] = e.target.value;
+  }
+  scheduleAutosave();
+});
+document.getElementById("notesEdit").addEventListener("click", e => {
+  if(e.target.id === "addNoteBtn"){
+    state.notes.push({heading:"New note", body:[]});
+    renderNotesEdit(); scheduleAutosave();
+    return;
+  }
+  const btn = e.target.closest(".row-del"); if(!btn) return;
+  state.notes.splice(+btn.dataset.index, 1);
+  renderNotesEdit(); scheduleAutosave();
+});
+
+/* Checklist structural editor (labels, has_subchecklist, sub-items, drive link, add/remove).
+   Inputs with data-sub-field belong to a sub-item's own edit row (nested
+   one level inside a top-level .check-edit-row); everything else is a
+   top-level field. */
+document.getElementById("checklistEdit").addEventListener("input", e => {
+  const subField = e.target.dataset.subField;
+  if(subField){
+    const subRow = e.target.closest(".sub-edit-row"); if(!subRow) return;
+    const idx = +subRow.dataset.index, si = +subRow.dataset.subIndex;
+    const sub = state.checklist[idx] && state.checklist[idx].subitems[si];
+    if(!sub) return;
+    if(subField === "label"){
+      sub.label = e.target.value;
+      renderProgressFromChecklist();
+    } else if(subField === "subitems"){
+      const prev = sub.subitems || [];
+      const labels = e.target.value.split("\n").map(s=>s.trim()).filter(Boolean);
+      sub.subitems = labels.map((label,i) => ({ label, checked: prev[i]?.checked || false, assignee: prev[i]?.assignee || null }));
+      renderProgressFromChecklist();
+    }
+    scheduleAutosave();
+    return;
+  }
+  const row = e.target.closest(".check-edit-row"); if(!row) return;
+  const idx = +row.dataset.index;
+  const field = e.target.dataset.field;
+  if(field === "label"){
+    const oldLabel = state.checklist[idx].label;
+    state.checklist[idx].label = e.target.value;
+    // Keep a linked gantt task pointed at this item through a rename —
+    // otherwise the label match it relies on (see ganttResolvedTasks)
+    // would silently break the moment the checklist item is renamed.
+    if(state.ganttTasks){
+      const linked = state.ganttTasks.find(t => t.source_type === "checklist" && t.source_label === oldLabel);
+      if(linked){ linked.source_label = e.target.value; linked.label = e.target.value; }
+    }
+    renderProgressFromChecklist();
+    renderGanttReadonly(); if(editMode) renderGanttEdit();
+  } else if(field === "drive_link"){
+    state.checklist[idx].drive_link = e.target.value.trim() || null;
+  } else if(field === "note"){
+    state.checklist[idx].note = e.target.value.trim() || null;
+    renderChecklist();
+  }
+  scheduleAutosave();
+});
+document.getElementById("checklistEdit").addEventListener("change", e => {
+  const subField = e.target.dataset.subField;
+  if(subField){
+    const subRow = e.target.closest(".sub-edit-row"); if(!subRow) return;
+    const idx = +subRow.dataset.index, si = +subRow.dataset.subIndex;
+    const sub = state.checklist[idx] && state.checklist[idx].subitems[si];
+    if(!sub) return;
+    if(subField === "has_subchecklist"){
+      sub.has_subchecklist = e.target.checked;
+      if(sub.has_subchecklist && !sub.subitems) sub.subitems = [];
+      renderChecklistEdit(); renderChecklist(); renderProgressFromChecklist(); scheduleAutosave();
+    } else if(subField === "show_assignee"){
+      sub.show_assignee = e.target.checked;
+      renderChecklist();
+      scheduleAutosave();
+    } else if(subField === "show_due_date"){
+      sub.show_due_date = e.target.checked;
+      renderChecklist();
+      scheduleAutosave();
+    }
+    return;
+  }
+  if(e.target.dataset.field === "has_subchecklist"){
+    const row = e.target.closest(".check-edit-row");
+    state.checklist[+row.dataset.index].has_subchecklist = e.target.checked;
+    renderChecklistEdit();
+    renderChecklist();
+    renderProgressFromChecklist();
+    scheduleAutosave();
+  } else if(e.target.dataset.field === "show_assignee"){
+    const row = e.target.closest(".check-edit-row");
+    state.checklist[+row.dataset.index].show_assignee = e.target.checked;
+    renderChecklistEdit(); // sub-item rows show the inherited default, so re-render them too
+    renderChecklist();
+    scheduleAutosave();
+  } else if(e.target.dataset.field === "show_drive_link"){
+    const row = e.target.closest(".check-edit-row");
+    state.checklist[+row.dataset.index].show_drive_link = e.target.checked;
+    renderChecklist();
+    scheduleAutosave();
+  }
+});
+document.getElementById("checklistEdit").addEventListener("click", e => {
+  const addBtn = e.target.closest(".add-row-btn");
+  if(addBtn){
+    const list = addBtn.dataset.list || "internal";
+    state.checklist.push({
+      label:"New item", checked:false, has_subchecklist:false, subitems:[], drive_link:null, note:null,
+      assignee:null, list, show_assignee:false, show_drive_link:false // new parent items start with both icons off; turn them on above if needed
+    });
+    renderChecklistEdit(); renderChecklist(); renderProgressFromChecklist(); scheduleAutosave();
+    return;
+  }
+  const addSubBtn = e.target.closest(".add-sub-row-btn");
+  if(addSubBtn){
+    const idx = +addSubBtn.dataset.index;
+    const item = state.checklist[idx]; if(!item) return;
+    item.subitems = item.subitems || [];
+    // New sub-items automatically get the person icon and the calendar
+    // icon, and can have their own sub-checklist added by ticking the box
+    // on their row — its items inherit both icons automatically too, and
+    // everything stays removable/addable from each row's own checkboxes.
+    item.subitems.push({ label:"New sub-item", checked:false, assignee:null, show_assignee:true, due_date:null, completed_date:null, show_due_date:true, has_subchecklist:false, subitems:[] });
+    renderChecklistEdit(); renderChecklist(); renderProgressFromChecklist(); scheduleAutosave();
+    return;
+  }
+  const moveBtn = e.target.closest(".row-move-btn");
+  if(moveBtn){
+    if(moveBtn.disabled) return;
+    moveChecklistItem(+moveBtn.dataset.index, +moveBtn.dataset.dir);
+    return;
+  }
+  const subMoveBtn = e.target.closest(".sub-row-move-btn");
+  if(subMoveBtn){
+    if(subMoveBtn.disabled) return;
+    moveSubitem(+subMoveBtn.dataset.index, +subMoveBtn.dataset.subIndex, +subMoveBtn.dataset.dir);
+    return;
+  }
+  const subDelBtn = e.target.closest(".sub-row-del");
+  if(subDelBtn){
+    const idx = +subDelBtn.dataset.index, si = +subDelBtn.dataset.subIndex;
+    const item = state.checklist[idx];
+    if(!item || !item.subitems) return;
+    item.subitems.splice(si, 1);
+    renderChecklistEdit(); renderChecklist(); renderProgressFromChecklist(); scheduleAutosave();
+    return;
+  }
+  const btn = e.target.closest(".row-del"); if(!btn) return;
+  state.checklist.splice(+btn.dataset.index, 1);
+  renderChecklistEdit(); renderChecklist(); renderProgressFromChecklist(); scheduleAutosave();
+});
+
+/* Sub-checklist collapse toggle: purely visual, no save needed */
+document.getElementById("checklist").addEventListener("click", e => {
+  const btn = e.target.closest(".check-collapse-btn"); if(!btn) return;
+  const path = btn.dataset.path.split(",").map(Number);
+  const node = getChecklistNodeByPath(path);
+  if(!node) return;
+  node._collapsed = !node._collapsed;
+  renderChecklist();
+});
+
+/* Checklist checkbox(es): always live, writes through immediately when possible.
+   Also stamps completed_date the moment an item is checked (cleared again
+   if unchecked) so the calendar icon can tell whether it was completed
+   before or after its deadline. */
+document.getElementById("checklist").addEventListener("change", async e => {
+  if(!e.target.matches('input[type="checkbox"]') || e.target.disabled) return;
+  const block = e.target.closest(".check-block"); if(!block) return;
+  const path = block.dataset.path.split(",").map(Number);
+  const node = getChecklistNodeByPath(path);
+  if(!node) return;
+  node.checked = e.target.checked;
+  node.completed_date = e.target.checked ? todayStr() : null;
+  const topItem = state.checklist[path[0]];
+  topItem.checked = isItemDone(topItem);
+  renderChecklist();
+  renderProgressFromChecklist();
+  await persistChecklistItemLive(topItem);
+});
+
+/* Photo delete (delegated — photo grids are rebuilt on every render) */
+document.getElementById("photoTabsets").addEventListener("click", async e => {
+  const btn = e.target.closest(".photo-del"); if(!btn) return;
+  const tile = btn.closest(".photo-tile");
+  const photoId = tile.dataset.id, ref = tile.dataset.ref, source = tile.dataset.source;
+  btn.disabled = true;
+  try{
+    const client = await getClient();
+    if(source === "storage" && ref) await client.storage.from(STORAGE_BUCKET).remove([ref]);
+    if(photoId) await client.from("photos").delete().eq("id", photoId);
+    await reloadPhotosOnly();
+  }catch(err){
+    alert("Couldn't delete photo: " + (err.message || err));
+    btn.disabled = false;
+  }
+});
+
+/* Photo upload + drive link add (delegated, keyed by the week's date) */
+document.getElementById("photoTabsets").addEventListener("change", async e => {
+  if(!e.target.classList.contains("photo-file-input")) return;
+  const file = e.target.files[0]; if(!file) return;
+  const week = e.target.dataset.week;
+  const statusEl = document.querySelector(`[data-status="${week}"]`);
+  statusEl.textContent = "Uploading…";
+  try{
+    const client = await getClient();
+    const path = `${PROJECT_ID}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g,"_")}`;
+    const { error: upErr } = await client.storage.from(STORAGE_BUCKET).upload(path, file);
+    if(upErr) throw upErr;
+    const { error: insErr } = await client.from("photos").insert({
+      project_id: PROJECT_ID, week, source:"storage", ref: path,
+      sort_order: (state.photos[week]?.length || 0)
+    });
+    if(insErr) throw insErr;
+    statusEl.textContent = "Uploaded.";
+    await reloadPhotosOnly();
+  }catch(err){
+    statusEl.textContent = "";
+    alert("Upload failed: " + (err.message || err));
+  }
+});
+
+document.getElementById("photoTabsets").addEventListener("click", async e => {
+  if(!e.target.classList.contains("drive-add-btn")) return;
+  const week = e.target.dataset.week;
+  const input = document.querySelector(`.drive-link-input[data-week="${week}"]`);
+  const link = input.value.trim();
+  if(!link) return;
+  const statusEl = document.querySelector(`[data-status="${week}"]`);
+  statusEl.textContent = "Adding…";
+  try{
+    const client = await getClient();
+    const { error } = await client.from("photos").insert({
+      project_id: PROJECT_ID, week, source:"drive", ref: link,
+      sort_order: (state.photos[week]?.length || 0)
+    });
+    if(error) throw error;
+    input.value = "";
+    statusEl.textContent = "Added.";
+    await reloadPhotosOnly();
+  }catch(err){
+    statusEl.textContent = "";
+    alert("Couldn't add Drive link: " + (err.message || err));
+  }
+});
+
+/* Add a week's date range (edit mode). Always the calendar week right
+   after the latest one on file — Monday to Sunday — so weeks stay
+   sequential with no gaps or manual date entry. Persisted in
+   `photo_weeks` so it survives a reload. */
+document.getElementById("addWeekBtn").addEventListener("click", async () => {
+  const weeks = mergeWeekKeys(state.photoWeeks || [], defaultWeekKeys());
+  const key = nextWeekKeyAfter(weeks);
+  state.photoWeeks = mergeWeekKeys(state.photoWeeks || [], [key]);
+  activePhotoWeek = key;
+  renderPhotos();
+  if(usingDemo) return;
+  try{
+    const client = await getClient();
+    const { error } = await client.from("photo_weeks").insert({ project_id: PROJECT_ID, start_date: key });
+    if(error) throw error;
+  }catch(err){
+    alert("Couldn't save the new week: " + (err.message || err));
+  }
+});
+
+/* Remove an (empty, manually-added) week tab */
+document.getElementById("photoTabs").addEventListener("click", async e => {
+  const btn = e.target.closest(".tab-remove"); if(!btn) return;
+  const key = btn.dataset.removeWeek;
+  if(!confirm(`Remove the ${weekLabel(key)} tab?`)) return;
+  state.photoWeeks = (state.photoWeeks || []).filter(k => k !== key);
+  if(activePhotoWeek === key) activePhotoWeek = null;
+  renderPhotos();
+  if(usingDemo) return;
+  try{
+    const client = await getClient();
+    const { error } = await client.from("photo_weeks").delete().eq("project_id", PROJECT_ID).eq("start_date", key);
+    if(error) throw error;
+  }catch(err){
+    alert("Couldn't remove the week: " + (err.message || err));
+  }
+});
+
+async function reloadPhotosOnly(){
+  const client = await getClient();
+  const [{ data:photos }, { data:photoWeekRows }] = await Promise.all([
+    client.from("photos").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+    client.from("photo_weeks").select("*").eq("project_id", PROJECT_ID),
+  ]);
+  const [lastWeekKey, thisWeekKey] = defaultWeekKeys();
+  const photosByWeek = {};
+  (photos||[]).forEach(p => {
+    const url = resolvePhotoUrl(p, client);
+    const key = normalizeWeekKey(p.week, lastWeekKey, thisWeekKey);
+    if(url) (photosByWeek[key] ||= []).push({ id:p.id, url, source:p.source, ref:p.ref, caption:p.caption });
+  });
+  state.photos = photosByWeek;
+  state.photoWeeks = mergeWeekKeys(
+    [lastWeekKey, thisWeekKey],
+    (photoWeekRows||[]).map(r => r.start_date),
+    Object.keys(photosByWeek)
+  );
+  renderPhotos();
+}
+
+/* ---------------------------------------------------------------
+   AUTOSAVE
+   Structural edits (info, parties, timeline, notes, checklist
+   structure) autosave ~1s after you stop typing/clicking, so nothing
+   is lost by tabbing away. The Save button forces it immediately;
+   switching tabs also flushes any pending save right away.
+--------------------------------------------------------------- */
+let saveTimer = null;
+
+function scheduleAutosave(){
+  document.getElementById("saveStatus").textContent = "Unsaved changes…";
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistNow, 900);
+}
+
+/* Fields Save/autosave/Discard manage. Deliberately excludes photos and
+   photoWeeks — those save immediately on their own the moment a photo
+   is added/removed/dated, independent of edit mode, so there's never
+   anything "unsaved this session" for Discard to undo there. */
+function captureEditSnapshot(){
+  if(!state) return;
+  editSessionSnapshot = {
+    project: structuredClone(state.project),
+    infoExtra: structuredClone(state.infoExtra),
+    stickyNotes: structuredClone(state.stickyNotes),
+    discussionCards: structuredClone(state.discussionCards),
+    parties: structuredClone(state.parties),
+    milestones: structuredClone(state.milestones),
+    notes: structuredClone(state.notes),
+    checklist: structuredClone(state.checklist),
+    assigneeNames: structuredClone(state.assigneeNames),
+    ganttTasks: structuredClone(state.ganttTasks),
+  };
+}
+
+async function persistNow(){
+  if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+  if(!state || usingDemo) return;
+  const statusEl = document.getElementById("saveStatus");
+  statusEl.textContent = "Saving…";
+  const saveBtn = document.getElementById("saveBtn");
+  saveBtn.disabled = true;
+  try{
+    const client = await getClient();
+    const p = state.project;
+
+    const { error: projErr } = await client.from("projects").update({
+      name: p.name, code: p.code,
+      period_start: p.period_start || null, period_end: p.period_end || null,
+      target_live: p.target_live || null, original_target_live: p.original_target_live || null,
+      status: p.status
+    }).eq("id", PROJECT_ID);
+    if(projErr) throw projErr;
+
+    await client.from("project_info").delete().eq("project_id", PROJECT_ID);
+    if(state.infoExtra && state.infoExtra.length){
+      const rows = state.infoExtra.map((f,i) => ({
+        project_id: PROJECT_ID, label: f.label, value: f.value, is_date: !!f.isDate, sort_order: i
+      }));
+      const { error } = await client.from("project_info").insert(rows);
+      if(error) throw error;
+    }
+
+    await client.from("sticky_notes").delete().eq("project_id", PROJECT_ID);
+    if(state.stickyNotes && state.stickyNotes.length){
+      const rows = state.stickyNotes.map(n => ({
+        project_id: PROJECT_ID, x: Math.round(n.x), y: Math.round(n.y), text: n.text || "", color: n.color || "#FFF6A8", z: n.z || 1
+      }));
+      const { error } = await client.from("sticky_notes").insert(rows);
+      if(error) throw error;
+    }
+
+    await client.from("discussion_cards").delete().eq("project_id", PROJECT_ID);
+    if(state.discussionCards && state.discussionCards.length){
+      const rows = state.discussionCards.map(c => ({
+        project_id: PROJECT_ID, type: c.type, x: Math.round(c.x), y: Math.round(c.y), z: c.z || 1, text: c.text || ""
+      }));
+      const { error } = await client.from("discussion_cards").insert(rows);
+      if(error) throw error;
+    }
+
+    await client.from("parties").delete().eq("project_id", PROJECT_ID);
+    if(state.parties.length){
+      const rows = state.parties.map((pt,i) => ({
+        project_id: PROJECT_ID, role: pt.role, name: pt.name, sort_order: i
+      }));
+      const { error } = await client.from("parties").insert(rows);
+      if(error) throw error;
+    }
+
+    await client.from("milestones").delete().eq("project_id", PROJECT_ID);
+    if(state.milestones.length){
+      const rows = state.milestones.map((m,i) => ({
+        project_id: PROJECT_ID, name: m.name, date: m.date || null, state: m.state, sort_order: i
+      }));
+      const { error } = await client.from("milestones").insert(rows);
+      if(error) throw error;
+    }
+
+    await client.from("notes").delete().eq("project_id", PROJECT_ID);
+    const noteRows = [];
+    state.notes.forEach(n => n.body.forEach((b,bi) => noteRows.push({
+      project_id: PROJECT_ID, heading: n.heading, body: b, sort_order: bi
+    })));
+    if(noteRows.length){
+      const { error } = await client.from("notes").insert(noteRows);
+      if(error) throw error;
+    }
+
+    await client.from("checklist_items").delete().eq("project_id", PROJECT_ID);
+    if(state.checklist.length){
+      const rows = state.checklist.map((c,i) => ({
+        project_id: PROJECT_ID, label: c.label, checked: isItemDone(c),
+        has_subchecklist: !!c.has_subchecklist, subitems: c.subitems || [],
+        drive_link: c.drive_link || null, note: c.note || null, list: c.list || "internal", sort_order: i,
+        assignee: c.assignee || null, show_assignee: c.show_assignee === true, show_drive_link: c.show_drive_link === true,
+        due_date: c.due_date || null, completed_date: c.completed_date || null
+      }));
+      const { data: inserted, error } = await client.from("checklist_items").insert(rows).select("id, sort_order").order("sort_order");
+      if(error) throw error;
+      // Patch freshly-assigned ids back onto local state (by position only) so
+      // live checkbox toggles keep working — everything else in state is left
+      // untouched so any edits made during this save aren't overwritten.
+      (inserted || []).forEach((row,i) => { if(state.checklist[i]) state.checklist[i].id = row.id; });
+    }
+
+    await client.from("checklist_assignees").delete().eq("project_id", PROJECT_ID);
+    if(state.assigneeNames && state.assigneeNames.length){
+      const rows = state.assigneeNames.map((name,i) => ({
+        project_id: PROJECT_ID, name, sort_order: i
+      }));
+      const { error } = await client.from("checklist_assignees").insert(rows);
+      if(error) throw error;
+    }
+
+    // Gantt tasks — same delete-then-reinsert pattern as every other
+    // table here. Dependencies survive because they're keyed by each
+    // task's own client_key (sent back unchanged), never by the DB row
+    // id (which is freshly generated on every save, like checklist_items).
+    const { error: ganttDelErr } = await client.from("gantt_tasks").delete().eq("project_id", PROJECT_ID);
+    if(ganttDelErr) console.warn("Couldn't clear gantt_tasks (has the migration been run?):", ganttDelErr.message || ganttDelErr);
+    else if(state.ganttTasks && state.ganttTasks.length){
+      const rows = state.ganttTasks.map((g,i) => ganttTaskRow({ ...g, sort_order: i }, PROJECT_ID));
+      const { error } = await client.from("gantt_tasks").insert(rows);
+      if(error) console.warn("Couldn't save gantt_tasks (has the migration been run?):", error.message || error);
+    }
+
+    statusEl.textContent = "All changes saved";
+    setTimeout(()=>{ if(statusEl.textContent === "All changes saved") statusEl.textContent = ""; }, 2500);
+    // A successful save is a new checkpoint: if the user keeps editing
+    // and then hits Discard, it should only undo what happened AFTER
+    // this save, not roll all the way back to when edit mode was opened.
+    captureEditSnapshot();
+  }catch(err){
+    statusEl.textContent = "";
+    alert("Couldn't save: " + (err.message || err));
+  }finally{
+    saveBtn.disabled = false;
+  }
+}
+
+async function discardChanges(){
+  if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+  if(!editSessionSnapshot){
+    // No snapshot on hand (shouldn't normally happen while editing) —
+    // fall back to the old behaviour of re-fetching from the database.
+    document.getElementById("saveStatus").textContent = "Reloading…";
+    state = await loadData();
+    document.getElementById("saveStatus").textContent = "";
+    renderAll();
+    return;
+  }
+  document.getElementById("saveStatus").textContent = "Discarding…";
+  const snap = structuredClone(editSessionSnapshot);
+  state.project = snap.project;
+  state.infoExtra = snap.infoExtra;
+  state.stickyNotes = snap.stickyNotes;
+  state.discussionCards = snap.discussionCards;
+  state.parties = snap.parties;
+  state.milestones = snap.milestones;
+  state.notes = snap.notes;
+  state.checklist = snap.checklist;
+  state.assigneeNames = snap.assigneeNames;
+  state.ganttTasks = snap.ganttTasks;
+  renderAll();
+  // Autosave likely already wrote this session's edits to the database
+  // (it fires ~900ms after each change) — save the restored snapshot
+  // too, so Discard actually undoes them everywhere, not just in this
+  // tab's view.
+  await persistNow();
+  document.getElementById("saveStatus").textContent = "";
+}
+
+/* Flush any pending autosave the moment the tab is hidden/switched away from,
+   so edits aren't lost if you don't come back for a while. */
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "hidden" && saveTimer && editMode){
+    persistNow();
+  }
+});
+
+/* ---------------------------------------------------------------
+   EDIT MODE TOGGLE
+--------------------------------------------------------------- */
+function updateEditBarVisibility(){
+  document.getElementById("editBar").classList.toggle("on", editMode);
+  document.getElementById("editToggleLabel").textContent = editMode ? "Editing" : "Edit";
+}
+document.getElementById("editToggleBtn").addEventListener("click", () => {
+  if(usingDemo){ alert("Connect Supabase (URL, key, and PROJECT_ID) before editing live data."); return; }
+  editMode = !editMode;
+  if(editMode) captureEditSnapshot();
+  ganttPickerMode = null;
+  updateEditBarVisibility();
+  renderAll();
+});
+document.getElementById("saveBtn").addEventListener("click", persistNow);
+document.getElementById("discardBtn").addEventListener("click", discardChanges);
+document.getElementById("exitEditBtn").addEventListener("click", async () => {
+  if(saveTimer) await persistNow();
+  editMode = false; ganttPickerMode = null; updateEditBarVisibility(); renderAll();
+});
+
+/* Photo week tabs (delegated — tabs are rebuilt on every render) */
+document.getElementById("photoTabs").addEventListener("click", e => {
+  const btn = e.target.closest(".tab-btn[data-week]"); if(!btn) return;
+  activePhotoWeek = btn.dataset.week;
+  renderPhotos();
+});
+
+/* Carousel arrows for the week tabs, once they overflow the panel width */
+document.getElementById("photoTabsPrev").addEventListener("click", () => {
+  const track = document.getElementById("photoTabs");
+  track.scrollBy({left: -track.clientWidth * 0.8, behavior:"smooth"});
+});
+document.getElementById("photoTabsNext").addEventListener("click", () => {
+  const track = document.getElementById("photoTabs");
+  track.scrollBy({left: track.clientWidth * 0.8, behavior:"smooth"});
+});
+document.getElementById("photoTabs").addEventListener("scroll", updateTabsNav);
+window.addEventListener("resize", updateTabsNav);
+
+/* ---------------------------------------------------------------
+   INIT
+--------------------------------------------------------------- */
+(async function init(){
+  const savedOutlet = localStorage.getItem(OUTLET_STORAGE_KEY);
+  if(savedOutlet) PROJECT_ID = savedOutlet;
+
+  if(SUPABASE_CONFIGURED){
+    outlets = await loadOutlets();
+    if(outlets.length && !outlets.find(o => o.id === PROJECT_ID)){
+      PROJECT_ID = outlets[0].id; // saved/default outlet no longer exists — fall back
+    }
+  }
+
+  state = await loadData();
+
+  document.getElementById("outletSwitcher").style.display = SUPABASE_CONFIGURED ? "flex" : "none";
+  if(SUPABASE_CONFIGURED){
+    populateOutletSelect();
+    if(PROJECT_ID) localStorage.setItem(OUTLET_STORAGE_KEY, PROJECT_ID);
+  }
+  document.getElementById("editToggleBtn").style.display = usingDemo ? "none" : "inline-flex";
+  renderAll();
+})();
+</script>
+</body>
+</html>
