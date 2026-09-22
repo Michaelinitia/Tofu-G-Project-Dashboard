@@ -945,16 +945,17 @@ const DEFAULT_CHECKLIST = [
   checked:false, subitems:[], drive_link:null, list:"internal", ...c, sort_order:i
 }));
 
-/* Sub-checklists start collapsed whenever a dashboard is (re)loaded —
-   only parent (category) rows show at first; expanding one is purely a
-   local UI choice (_collapsed is never persisted), so it resets to
-   collapsed again next time the outlet is opened. Recurses so a nested
-   sub-checklist starts collapsed too. Mutates in place and returns the
-   same array, so it can be dropped inline wherever a checklist is set. */
+/* Sub-checklists start expanded whenever a dashboard is (re)loaded —
+   parent (category) rows show their subitems right away; collapsing one
+   is purely a local UI choice (_collapsed is never persisted), so it
+   resets to expanded again next time the outlet is opened. Recurses so
+   a nested sub-checklist starts expanded too. Mutates in place and
+   returns the same array, so it can be dropped inline wherever a
+   checklist is set. */
 function collapseAllParents(list){
   (list || []).forEach(item => {
     if(item.has_subchecklist){
-      item._collapsed = true;
+      item._collapsed = false;
       collapseAllParents(item.subitems);
     }
   });
