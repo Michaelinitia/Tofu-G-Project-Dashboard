@@ -780,6 +780,7 @@
 
   /* page rhythm */
   main{padding:22px 0 60px;}
+  main.wrap{padding-top:22px; padding-bottom:60px;}
   main.wrap > * + *{margin-top:20px;}
 
   /* panels = rounded white cards, collapsible */
@@ -921,6 +922,69 @@
     .v2-v.txt{max-width:55%;}
     .settings-modal{max-height:90vh;}
   }
+
+  /* collapsible sections holding side-by-side panels */
+  .v2-section-head{display:inline-flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:7px 12px; font-family:inherit; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink);}
+  .v2-section-head:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .v2-section.is-collapsed .v2-caret{transform:rotate(-90deg);}
+  .v2-section.is-collapsed > .v2-section-body{display:none;}
+  .v2-section-body{margin-top:10px;}
+  .v2-trio{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; align-items:start;}
+  .v2-duo{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; align-items:start;}
+  .v2-trio > .panel, .v2-duo > .panel{margin-top:0; min-width:0; display:flex; flex-direction:column;}
+  .v2-trio > .panel{height:372px;}
+  .v2-duo > .panel{height:340px;}
+  .v2-trio > .panel > .panel-body, .v2-duo > .panel > .panel-body{flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--line) transparent;}
+  .v2-trio > .panel.is-collapsed, .v2-duo > .panel.is-collapsed{height:auto;}
+  #editBar.on ~ main .v2-duo > .panel{height:auto;}
+  #editBar.on ~ main .v2-duo > .panel > .panel-body{overflow:visible;}
+  .v2-trio .v2-row{gap:12px;}
+  .v2-trio .v2-v{font-size:22px;}
+  .v2-trio .v2-v.txt{font-size:14.5px;}
+  .v2-mini .timeline{padding-top:12px;}
+  .v2-mini .tl-item{padding-bottom:14px;}
+  .v2-mini .tl-item .tl-name{font-size:13px;}
+  .v2-duo .notes-grid{grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));}
+  @media (max-width: 1000px){ .v2-trio{grid-template-columns:repeat(2, minmax(0,1fr));} .v2-trio > .panel:last-child{grid-column:1 / -1;} }
+  @media (max-width: 760px){ .v2-trio, .v2-duo{grid-template-columns:1fr;} .v2-trio > .panel:last-child{grid-column:auto;} }
+
+  /* hero photo carousel */
+  .v2-hero-grid{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:32px; align-items:stretch;}
+  .v2-hero-main{min-width:0;}
+  .v2-photo-card{position:relative; z-index:1; min-width:0; min-height:150px;}
+  .v2-photo-shell{position:absolute; inset:0; display:flex; flex-direction:column; background:#15254d; border:1px solid rgba(255,255,255,0.16); border-radius:12px; padding:8px;}
+  .v2-photo-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; flex:none;}
+  .v2-photo-week{flex:1; min-width:0; text-align:center;}
+  .v2-photo-kicker{font-size:9.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--orange);}
+  .v2-photo-range{font-size:13px; font-weight:800; color:#fff; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .v2-pc-btn{flex:none; width:26px; height:26px; border-radius:6px; border:1px solid #fff; background:#fff; color:var(--ink); font-size:15px; line-height:1; padding:0; display:flex; align-items:center; justify-content:center;}
+  .v2-pc-btn:hover:not(:disabled){border-color:var(--orange); color:var(--orange-ink);}
+  .v2-pc-btn:disabled{opacity:0.35; cursor:default;}
+  .v2-photo-frame{position:relative; flex:1; min-height:0; border-radius:8px; overflow:hidden; background:#1c3163; touch-action:pan-y;}
+  .v2-photo-frame img{width:100%; height:100%; object-fit:cover; display:block; cursor:zoom-in;}
+  .v2-photo-frame img[hidden], .v2-photo-empty[hidden], .v2-pc-nav[hidden]{display:none;}
+  .v2-photo-empty{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#93a6cd; text-align:center; padding:16px;}
+  .v2-pc-nav{position:absolute; top:50%; transform:translateY(-50%); width:28px; height:28px; border-radius:50%; border:1px solid #fff; background:#fff; color:var(--ink); font-size:18px; line-height:1; padding:0; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25);}
+  .v2-pc-nav:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .v2-pc-nav.prev{left:8px;}
+  .v2-pc-nav.next{right:8px;}
+  .v2-pc-count{position:absolute; right:6px; top:6px; background:rgba(14,27,58,0.78); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px;}
+  .v2-pc-count:empty{display:none;}
+  .v2-photo-caption{position:absolute; left:0; right:0; bottom:0; padding:14px 8px 5px; font-size:11px; color:#fff; background:linear-gradient(transparent, rgba(14,27,58,0.8)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none;}
+  .v2-photo-caption:empty{display:none;}
+  .v2-photo-manage{display:none; margin-top:12px; background:#fff; color:var(--ink); border-radius:10px; padding:12px; max-height:380px; overflow:auto;}
+  #editBar.on ~ .v2-hero .v2-photo-manage{display:block; margin-top:20px;}
+  .v2-photo-manage-title{font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--orange-ink); margin-bottom:10px;}
+  .v2-photo-manage .photo-grid{grid-template-columns:repeat(auto-fill, minmax(96px,1fr));}
+  .v2-photo-manage .photo-tile img{height:80px;}
+  .v2-photo-manage .tabs-carousel{margin-bottom:10px;}
+  @media (max-width: 1000px){ .v2-hero-grid{grid-template-columns:minmax(0,1fr) 260px; gap:24px;} }
+  @media (max-width: 760px){
+    .v2-hero-grid{grid-template-columns:1fr; gap:20px; align-items:start;}
+    .v2-photo-card{min-height:0;}
+    .v2-photo-shell{position:static;}
+    .v2-photo-frame{flex:none; aspect-ratio:16/9;}
+  }
 </style>
 </head>
 <body>
@@ -955,6 +1019,8 @@
 
 <header class="v2-hero">
   <div class="wrap">
+    <div class="v2-hero-grid">
+      <div class="v2-hero-main">
     <div class="kicker" id="kicker">WEEKLY PROGRESS &mdash; SITE DASHBOARD</div>
     <h1 class="project-title" id="projectTitle">Loading project&hellip;</h1>
     <input class="project-title-input" id="projectTitleInput" style="display:none;" data-field="name">
@@ -968,12 +1034,50 @@
       <div class="project-sub" id="projectSub"></div>
     </div>
     <div class="v2-hero-rule"></div>
+      </div>
+
+      <aside class="v2-photo-card" aria-label="Site photos">
+        <div class="v2-photo-shell">
+        <div class="v2-photo-head">
+          <button type="button" class="v2-pc-btn" id="heroWeekPrev" aria-label="Previous week">‹</button>
+          <div class="v2-photo-week">
+            <div class="v2-photo-kicker" id="heroWeekTag">Site photos</div>
+            <div class="v2-photo-range" id="heroWeekLabel">&mdash;</div>
+          </div>
+          <button type="button" class="v2-pc-btn" id="heroWeekNext" aria-label="Next week">›</button>
+        </div>
+        <div class="v2-photo-frame" id="heroPhotoFrame">
+          <img id="heroPhotoImg" alt="" hidden>
+          <div class="v2-photo-empty" id="heroPhotoEmpty">No photos this week</div>
+          <button type="button" class="v2-pc-nav prev" id="heroPhotoPrev" aria-label="Previous photo" hidden>‹</button>
+          <button type="button" class="v2-pc-nav next" id="heroPhotoNext" aria-label="Next photo" hidden>›</button>
+          <div class="v2-pc-count" id="heroPhotoCount"></div>
+          <div class="v2-photo-caption" id="heroPhotoCaption"></div>
+        </div>
+        </div>
+      </aside>
+    </div>
+    <div class="v2-photo-manage">
+      <div class="v2-photo-manage-title">Manage photos</div>
+      <div class="tabs-carousel">
+    <button class="tabs-nav" id="photoTabsPrev" type="button" aria-label="Scroll weeks left" hidden>‹</button>
+    <div class="tabs" id="photoTabs"></div>
+    <button class="tabs-nav" id="photoTabsNext" type="button" aria-label="Scroll weeks right" hidden>›</button>
+      </div>
+      <div id="photoTabsets"></div>
+      <div class="add-week-row" id="addWeekRow" style="display:none;">
+    <button class="btn btn-outline" id="addWeekBtn">+ Add week</button>
+      </div>
+    </div>
+
   </div>
 </header>
 
 <main class="wrap">
 
-  <div class="v2-pair">
+  <section class="v2-section" data-collapse="glance">
+    <button type="button" class="v2-section-head"><span class="v2-caret">▾</span>At a glance</button>
+    <div class="v2-section-body v2-trio">
     <div class="panel v2-mini" data-collapse="metrics">
       <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Key metrics</span><span class="v2-count">5 signals</span></div>
       <div class="panel-body">
@@ -982,6 +1086,13 @@
           <div class="v2-row"><div><div class="v2-k hot">Overdue items</div><div class="v2-s" id="mOverdueSub">—</div></div><div class="v2-v" id="mOverdue">—</div></div>
           <div class="v2-row"><div><div class="v2-k hot">Open roadblocks</div><div class="v2-s" id="mBlockersSub">—</div></div><div class="v2-v" id="mBlockers">—</div></div>
           <div class="v2-row"><div><div class="v2-k hot">Checklist closed</div><div class="v2-s"><span id="planPct">&mdash;</span> items checked off</div></div><div class="v2-v" id="actualPct">&mdash;</div></div>
+      </div>
+    </div>
+    <div class="panel v2-mini" data-collapse="milestones">
+      <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Milestones</span></div>
+      <div class="panel-body">
+        <div class="timeline" id="timeline"></div>
+        <div id="timelineEdit" style="display:none;"></div>
       </div>
     </div>
     <div class="panel v2-mini" data-collapse="details">
@@ -994,7 +1105,8 @@
         <div id="dExtra"></div>
       </div>
     </div>
-  </div>
+    </div>
+  </section>
 
   <div class="panel" data-collapse="roadblocks">
     <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Weekly Roadblocks</span><span class="v2-count" id="rbCount"></span></div>
@@ -1095,7 +1207,9 @@
     </div>
   </div>
 
-  <div class="v2-pair">
+  <section class="v2-section" data-collapse="reference">
+    <button type="button" class="v2-section-head"><span class="v2-caret">▾</span>Reference</button>
+    <div class="v2-section-body v2-duo">
     <div class="panel" data-collapse="info">
       <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Project information</span></div>
       <div class="panel-body">
@@ -1103,37 +1217,15 @@
         <div id="infoEdit" style="display:none;"></div>
       </div>
     </div>
-    <div class="panel" data-collapse="milestones">
-      <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Milestones</span></div>
-      <div class="panel-body">
-        <div class="timeline" id="timeline"></div>
-        <div id="timelineEdit" style="display:none;"></div>
-      </div>
-    </div>
-  </div>
-
   <div class="panel" data-collapse="notes">
-    <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Notes</span></div>
-    <div class="panel-body">
-      <div class="notes-grid" id="notesGrid"></div>
-      <div id="notesEdit" style="display:none;"></div>
-    </div>
-  </div>
-
-  <div class="panel" data-collapse="photos">
-    <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Site photos</span></div>
-    <div class="panel-body">
-      <div class="tabs-carousel">
-        <button class="tabs-nav" id="photoTabsPrev" type="button" aria-label="Scroll weeks left" hidden>‹</button>
-        <div class="tabs" id="photoTabs"></div>
-        <button class="tabs-nav" id="photoTabsNext" type="button" aria-label="Scroll weeks right" hidden>›</button>
-      </div>
-      <div id="photoTabsets"></div>
-      <div class="add-week-row" id="addWeekRow" style="display:none;">
-        <button class="btn btn-outline" id="addWeekBtn">+ Add week</button>
+      <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Notes</span></div>
+      <div class="panel-body">
+        <div class="notes-grid" id="notesGrid"></div>
+        <div id="notesEdit" style="display:none;"></div>
       </div>
     </div>
-  </div>
+    </div>
+  </section>
 
 </main>
 
@@ -1155,7 +1247,7 @@
   </div>
 </div>
 
-<footer>Updated automatically from Supabase &middot; <span id="lastSync">&mdash;</span></footer>
+<footer style="position: relative">Updated automatically from Supabase &middot; <span id="lastSync">&mdash;</span></footer>
 
 
 <script>
@@ -1163,6 +1255,19 @@
 (function(){
   var KEY = "tofuV2Collapsed", saved = {};
   try{ saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; }catch(e){}
+  document.querySelectorAll(".v2-section[data-collapse]").forEach(function(sec){
+    var id = "section:" + sec.getAttribute("data-collapse");
+    var head = sec.querySelector(":scope > .v2-section-head");
+    if(!head) return;
+    if(saved[id]) sec.classList.add("is-collapsed");
+    head.setAttribute("aria-expanded", String(!saved[id]));
+    head.addEventListener("click", function(){
+      sec.classList.toggle("is-collapsed");
+      saved[id] = sec.classList.contains("is-collapsed");
+      head.setAttribute("aria-expanded", String(!saved[id]));
+      try{ localStorage.setItem(KEY, JSON.stringify(saved)); }catch(e){}
+    });
+  });
   document.querySelectorAll(".panel[data-collapse]").forEach(function(panel){
     var id = panel.getAttribute("data-collapse");
     var title = panel.querySelector(":scope > .panel-title");
@@ -3092,6 +3197,7 @@ function renderPhotos(){
   if(addBtn) addBtn.textContent = `+ Add week (${weekLabel(nextWeekKeyAfter(weeks))})`;
 
   updateTabsNav();
+  renderHeroCarousel();
   const activeBtn = document.querySelector("#photoTabs .tab-btn.active");
   if(activeBtn) activeBtn.scrollIntoView({inline:"nearest", block:"nearest"});
 }
@@ -3208,6 +3314,80 @@ function renderKeyMetrics(){
 }
 document.addEventListener("change", () => setTimeout(renderKeyMetrics, 0));
 document.addEventListener("input", e => { if(e.target.closest && e.target.closest("#infoEdit, #timelineEdit, #partiesEdit")) setTimeout(renderKeyMetrics, 0); });
+
+/* ---------------------------------------------------------------
+   v2 — HERO PHOTO CAROUSEL. Reads the same state.photos / photo weeks
+   and activePhotoWeek as the photo tabs; changing week here re-renders
+   the tabs so both stay in step. Read-only — uploads/deletes remain in
+   "Manage photos" (edit mode).
+--------------------------------------------------------------- */
+let heroPhotoIdx = 0, heroPhotoWeek = null;
+function heroWeeks(){ return mergeWeekKeys((state && state.photoWeeks) || [], defaultWeekKeys()); }
+function heroPhotos(){ return (state && state.photos && state.photos[activePhotoWeek]) || []; }
+function renderHeroCarousel(){
+  const img = document.getElementById("heroPhotoImg");
+  if(!img || !state) return;
+  const weeks = heroWeeks();
+  const [lastKey, thisKey] = defaultWeekKeys();
+  const key = activePhotoWeek;
+  if(key !== heroPhotoWeek){ heroPhotoWeek = key; heroPhotoIdx = 0; }
+  const photos = heroPhotos();
+  if(heroPhotoIdx >= photos.length) heroPhotoIdx = 0;
+  const wi = weeks.indexOf(key);
+  document.getElementById("heroWeekLabel").textContent = key ? weekLabel(key) : "—";
+  document.getElementById("heroWeekTag").textContent =
+    key === thisKey ? "This week" : key === lastKey ? "Last week" : `Week ${wi + 1} of ${weeks.length}`;
+  document.getElementById("heroWeekPrev").disabled = wi <= 0;
+  document.getElementById("heroWeekNext").disabled = wi < 0 || wi >= weeks.length - 1;
+  const many = photos.length > 1;
+  document.getElementById("heroPhotoPrev").hidden = !many;
+  document.getElementById("heroPhotoNext").hidden = !many;
+  const empty = document.getElementById("heroPhotoEmpty");
+  const count = document.getElementById("heroPhotoCount");
+  const cap = document.getElementById("heroPhotoCaption");
+  if(photos.length){
+    const p = photos[heroPhotoIdx];
+    if(img.getAttribute("src") !== p.url) img.src = p.url;
+    img.alt = p.caption || "Site photo";
+    img.hidden = false; empty.hidden = true;
+    count.textContent = many ? `${heroPhotoIdx + 1} / ${photos.length}` : "";
+    cap.textContent = p.caption || `${photos.length} photo${photos.length === 1 ? "" : "s"} this week`;
+  } else {
+    img.hidden = true; img.removeAttribute("src"); empty.hidden = false;
+    count.textContent = ""; cap.textContent = "";
+  }
+}
+function heroStepWeek(dir){
+  const weeks = heroWeeks();
+  const j = weeks.indexOf(activePhotoWeek) + dir;
+  if(j < 0 || j >= weeks.length) return;
+  activePhotoWeek = weeks[j];
+  renderPhotos();
+}
+function heroStepPhoto(dir){
+  const n = heroPhotos().length;
+  if(n < 2) return;
+  heroPhotoIdx = (heroPhotoIdx + dir + n) % n;
+  renderHeroCarousel();
+}
+document.getElementById("heroWeekPrev").addEventListener("click", () => heroStepWeek(-1));
+document.getElementById("heroWeekNext").addEventListener("click", () => heroStepWeek(1));
+document.getElementById("heroPhotoPrev").addEventListener("click", () => heroStepPhoto(-1));
+document.getElementById("heroPhotoNext").addEventListener("click", () => heroStepPhoto(1));
+document.getElementById("heroPhotoImg").addEventListener("click", () => {
+  const p = heroPhotos()[heroPhotoIdx];
+  if(p && p.url) window.open(p.url, "_blank", "noopener");
+});
+(function(){
+  const frame = document.getElementById("heroPhotoFrame");
+  let x0 = null;
+  frame.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, {passive:true});
+  frame.addEventListener("touchend", e => {
+    if(x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if(Math.abs(dx) > 40) heroStepPhoto(dx < 0 ? 1 : -1);
+  });
+})();
 
 function renderAll(){
   applyAutoStatus();
