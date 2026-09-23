@@ -951,9 +951,24 @@
   /* hero photo carousel */
   .v2-hero-grid{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:32px; align-items:stretch;}
   .v2-hero-main{min-width:0;}
-  .v2-photo-card{position:relative; z-index:1; min-width:0; min-height:150px;}
+  .v2-photo-card{position:relative; z-index:1; min-width:0; min-height:150px; display:flex; flex-direction:column;}
+  .v2-card-tabs{display:flex; gap:6px; margin-bottom:6px; flex:none;}
+  .v2-card-tab{font-family:inherit; font-size:11px; font-weight:700; letter-spacing:0.04em; padding:5px 11px; border-radius:6px; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);}
+  .v2-card-tab:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .v2-card-tab.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .v2-card-body{position:relative; flex:1; min-height:0;}
   .v2-photo-shell{position:absolute; inset:0; display:flex; flex-direction:column; background:#15254d; border:1px solid rgba(255,255,255,0.16); border-radius:12px; padding:8px;}
+  .v2-photo-shell[hidden]{display:none;}
   .v2-photo-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; flex:none;}
+  .v2-activity-list{flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.25) transparent; padding:2px 4px;}
+  .activity-item{padding:8px 4px; border-top:1px solid rgba(255,255,255,0.12);}
+  .activity-item:first-child{border-top:0;}
+  .activity-actor{font-size:12px; font-weight:700; color:#fff;}
+  .activity-summary{font-size:11.5px; color:#c9d3e8; margin-top:2px; line-height:1.4;}
+  .activity-time{font-size:10.5px; color:#93a6cd; margin-top:3px;}
+  .v2-activity-empty{color:#93a6cd; font-size:11px; text-align:center; padding:24px 8px;}
+  #activityEditingAs{cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px;}
+  #activityEditingAs:hover{color:var(--orange);}
   .v2-photo-week{flex:1; min-width:0; text-align:center;}
   .v2-photo-kicker{font-size:9.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--orange);}
   .v2-photo-range{font-size:13px; font-weight:800; color:#fff; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -982,8 +997,10 @@
   @media (max-width: 760px){
     .v2-hero-grid{grid-template-columns:1fr; gap:20px; align-items:start;}
     .v2-photo-card{min-height:0;}
+    .v2-card-body{position:static;}
     .v2-photo-shell{position:static;}
     .v2-photo-frame{flex:none; aspect-ratio:16/9;}
+    .v2-activity-list{max-height:280px;}
   }
 </style>
 </head>
@@ -1036,8 +1053,13 @@
     <div class="v2-hero-rule"></div>
       </div>
 
-      <aside class="v2-photo-card" aria-label="Site photos">
-        <div class="v2-photo-shell">
+      <aside class="v2-photo-card" aria-label="Site photos and activity">
+        <div class="v2-card-tabs">
+          <button type="button" class="v2-card-tab active" id="cardTabPhotos" data-card-tab="photos">Photos</button>
+          <button type="button" class="v2-card-tab" id="cardTabActivity" data-card-tab="activity">Activity</button>
+        </div>
+        <div class="v2-card-body">
+        <div class="v2-photo-shell" id="cardShellPhotos">
         <div class="v2-photo-head">
           <button type="button" class="v2-pc-btn" id="heroWeekPrev" aria-label="Previous week">‹</button>
           <div class="v2-photo-week">
@@ -1053,6 +1075,16 @@
           <button type="button" class="v2-pc-nav next" id="heroPhotoNext" aria-label="Next photo" hidden>›</button>
           <div class="v2-pc-count" id="heroPhotoCount"></div>
           <div class="v2-photo-caption" id="heroPhotoCaption"></div>
+        </div>
+        </div>
+        <div class="v2-photo-shell" id="cardShellActivity" hidden>
+          <div class="v2-photo-head">
+            <div class="v2-photo-week">
+              <div class="v2-photo-kicker">Recent activity</div>
+              <div class="v2-photo-range" id="activityEditingAs">&mdash;</div>
+            </div>
+          </div>
+          <div class="v2-activity-list" id="activityList"></div>
         </div>
         </div>
       </aside>
@@ -1307,7 +1339,29 @@ const SUPABASE_ANON_KEY = "sb_publishable_nv5KuSnWyIozyV8ZaGzUVA_Jv2DCVXD";
 let PROJECT_ID = "bb300e4c-1340-4fef-803b-fbac12332dac";
 const STORAGE_BUCKET = "site-photos";
 const OUTLET_STORAGE_KEY = "tofuDashboardOutletId";
+const ACTOR_STORAGE_KEY = "tofuDashboardActorName";
 const SUPABASE_CONFIGURED = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+/* ---------------------------------------------------------------
+   ACTOR IDENTITY — there's no login system here, so "who made a
+   change" is a name the browser remembers (localStorage), asked for
+   once when someone first enters edit mode. Purely a display label
+   for the activity log, not authentication.
+--------------------------------------------------------------- */
+function getActorName(){
+  try{ return localStorage.getItem(ACTOR_STORAGE_KEY) || ""; }catch(e){ return ""; }
+}
+function setActorName(name){
+  try{ localStorage.setItem(ACTOR_STORAGE_KEY, name); }catch(e){}
+}
+function ensureActorName(force){
+  let name = getActorName();
+  if(!name || force){
+    const entered = (prompt("Your name (shown on the activity log for changes you make):", name || "") || "").trim();
+    if(entered){ name = entered; setActorName(name); }
+  }
+  return name;
+}
 
 const DEFAULT_CHECKLIST = [
   { label:"Kick off meeting",             has_subchecklist:false },
@@ -1424,6 +1478,10 @@ const DEMO = {
     {type:"diamonds", x:150, y:60, z:2, text:"Confirm supplier for kitchen extraction hood"},
   ],
   assigneeNames:["Kah Kah", "Sabrina", "Michael"],
+  activity:[
+    {actor:"Michael", summary:"Checked off 2 checklist items", created_at: new Date(Date.now() - 3600e3).toISOString()},
+    {actor:"Sabrina", summary:"Updated project details", created_at: new Date(Date.now() - 26*3600e3).toISOString()},
+  ],
   checklist: (() => {
     const c = structuredClone(DEFAULT_CHECKLIST);
     c[0].checked = true; c[1].checked = true; // kick off + briefing done
@@ -1491,6 +1549,33 @@ async function getClient(){
   const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
   supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   return supabase;
+}
+
+/* ---------------------------------------------------------------
+   ACTIVITY LOG — REALTIME
+   Subscribes to new activity_log rows for the current outlet so the
+   feed updates for every open tab as soon as anyone saves, not just
+   the person who made the change. Requires activity_log to have
+   Realtime enabled on the Supabase project (Database → Replication);
+   if it isn't, this silently does nothing and the feed still updates
+   on page load / after your own saves.
+--------------------------------------------------------------- */
+let activityChannel = null;
+async function subscribeActivity(){
+  const client = await getClient();
+  if(!client || usingDemo) return;
+  if(activityChannel){ client.removeChannel(activityChannel); activityChannel = null; }
+  activityChannel = client
+    .channel(`activity_log:${PROJECT_ID}`)
+    .on("postgres_changes", { event:"INSERT", schema:"public", table:"activity_log", filter:`project_id=eq.${PROJECT_ID}` }, payload => {
+      const row = payload.new;
+      if(!row || !state) return;
+      // Skip our own inserts — logActivity() already pushed a local copy.
+      if(state.activity && state.activity[0] && state.activity[0].created_at === row.created_at && state.activity[0].actor === row.actor) return;
+      state.activity = [{actor:row.actor, summary:row.summary, created_at:row.created_at}, ...(state.activity || [])].slice(0, 30);
+      renderActivity();
+    })
+    .subscribe();
 }
 
 /* ---------------------------------------------------------------
@@ -1575,7 +1660,7 @@ async function loadData(){
     const client = await getClient();
     const [
       {data:project, error:pErr}, {data:milestones},
-      {data:notes}, {data:photos}, {data:parties}, {data:checklist}, {data:infoExtra}, {data:stickyNotes}, {data:discussionCards}, {data:assignees}, {data:photoWeekRows}, {data:ganttRows, error:ganttErr}
+      {data:notes}, {data:photos}, {data:parties}, {data:checklist}, {data:infoExtra}, {data:stickyNotes}, {data:discussionCards}, {data:assignees}, {data:photoWeekRows}, {data:ganttRows, error:ganttErr}, {data:activityRows, error:activityErr}
     ] = await Promise.all([
       client.from("projects").select("*").eq("id", PROJECT_ID).single(),
       client.from("milestones").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
@@ -1589,11 +1674,13 @@ async function loadData(){
       client.from("checklist_assignees").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
       client.from("photo_weeks").select("*").eq("project_id", PROJECT_ID),
       client.from("gantt_tasks").select("*").eq("project_id", PROJECT_ID).order("sort_order"),
+      client.from("activity_log").select("*").eq("project_id", PROJECT_ID).order("created_at", {ascending:false}).limit(30),
     ]);
-    // gantt_tasks is a newer table — if the migration hasn't been run yet
-    // on this Supabase project, treat it as "no gantt data" rather than
-    // failing the whole dashboard load.
+    // gantt_tasks and activity_log are newer tables — if their migration
+    // hasn't been run yet on this Supabase project, treat them as empty
+    // rather than failing the whole dashboard load.
     if(ganttErr) console.warn("Couldn't load gantt_tasks (has the migration been run?):", ganttErr.message || ganttErr);
+    if(activityErr) console.warn("Couldn't load activity_log (has the migration been run?):", activityErr.message || activityErr);
     if(pErr || !project) throw pErr || new Error("No project row found");
     if(project.status === "behind") project.status = "delayed"; // legacy value
 
@@ -1665,6 +1752,7 @@ async function loadData(){
       discussionCards: discussionCards && discussionCards.length ? discussionCards.map(c => ({ type:c.type, x:c.x, y:c.y, z:c.z || 1, text:c.text || "" })) : [],
       assigneeNames,
       ganttTasks,
+      activity: (activityRows || []).map(a => ({ actor:a.actor, summary:a.summary, created_at:a.created_at })),
     };
   }catch(err){
     console.warn("Supabase fetch failed, showing demo data:", err.message || err);
@@ -1702,6 +1790,7 @@ async function switchOutlet(id){
   state = await loadData();
   populateOutletSelect();
   renderAll();
+  subscribeActivity();
 }
 
 function populateOutletSelect(){
@@ -1937,6 +2026,43 @@ function toInputDate(d){
 }
 function esc(s){
   return (s ?? "").toString().replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtRelativeTime(d){
+  if(!d) return "—";
+  const dt = new Date(d);
+  if(isNaN(dt)) return "—";
+  const diffMs = Date.now() - dt.getTime();
+  const mins = Math.round(diffMs / 60000);
+  if(mins < 1) return "just now";
+  if(mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`;
+  const hours = Math.round(mins / 60);
+  if(hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  if(days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return fmtDate(d);
+}
+
+/* ---------------------------------------------------------------
+   RENDER: ACTIVITY LOG — who changed what, and when. Reads
+   state.activity (loaded from activity_log, newest first) and is
+   also pushed to live by the realtime subscription set up in
+   subscribeActivity() below, so it updates for every viewer as soon
+   as anyone saves, not just on page load.
+--------------------------------------------------------------- */
+function renderActivity(){
+  const list = document.getElementById("activityList");
+  if(!list) return;
+  const rows = state ? (state.activity || []) : [];
+  list.innerHTML = rows.length
+    ? rows.map(a => `
+        <div class="activity-item">
+          <div class="activity-actor">${esc(a.actor) || "Someone"}</div>
+          <div class="activity-summary">${esc(a.summary) || "Made a change"}</div>
+          <div class="activity-time">${fmtRelativeTime(a.created_at)}</div>
+        </div>`).join("")
+    : `<div class="v2-activity-empty">No activity yet — changes will show up here.</div>`;
+  const asEl = document.getElementById("activityEditingAs");
+  if(asEl) asEl.textContent = getActorName() ? `Editing as ${getActorName()}` : "Editing as —";
 }
 
 /* ---------------------------------------------------------------
@@ -3389,6 +3515,20 @@ document.getElementById("heroPhotoImg").addEventListener("click", () => {
   });
 })();
 
+/* Photos / Activity tab switcher on the hero card */
+document.querySelectorAll(".v2-card-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tab = btn.dataset.cardTab;
+    document.querySelectorAll(".v2-card-tab").forEach(b => b.classList.toggle("active", b === btn));
+    document.getElementById("cardShellPhotos").hidden = tab !== "photos";
+    document.getElementById("cardShellActivity").hidden = tab !== "activity";
+  });
+});
+document.getElementById("activityEditingAs").addEventListener("click", () => {
+  ensureActorName(true);
+  renderActivity();
+});
+
 function renderAll(){
   applyAutoStatus();
   renderHeaderReadonly();
@@ -3401,6 +3541,7 @@ function renderAll(){
   renderGanttReadonly();
   renderStickyNotes();
   renderDiscussionCards();
+  renderActivity();
   document.getElementById("checklistEdit").style.display = editMode ? "grid" : "none";
   document.getElementById("assigneeNamesEdit").style.display = editMode ? "block" : "none";
   renderPhotos();
@@ -4132,9 +4273,52 @@ function captureEditSnapshot(){
   };
 }
 
+/* Coarse, human-readable summary of what changed between two state
+   snapshots — good enough for an activity feed, not a full diff. */
+function buildChangeSummary(before, after){
+  if(!before) return "Made changes";
+  const parts = [];
+  const p0 = before.project || {}, p1 = after.project || {};
+  const projectFields = { name:"name", code:"code", period_start:"construction start", period_end:"construction end", target_live:"opening date", original_target_live:"original opening date", status:"status" };
+  const changedProjectFields = Object.keys(projectFields).filter(k => (p0[k]||"") !== (p1[k]||""));
+  if(changedProjectFields.length) parts.push(`updated ${changedProjectFields.map(k => projectFields[k]).join(", ")}`);
+
+  const countDone = list => (list||[]).reduce((s,c) => s + (isItemDone(c)?1:0) + (c.subitems||[]).reduce((ss,si) => ss + (si.checked?1:0), 0), 0);
+  if(JSON.stringify(before.checklist) !== JSON.stringify(after.checklist)){
+    const delta = countDone(after.checklist) - countDone(before.checklist);
+    parts.push(delta > 0 ? `checked off ${delta} checklist item${delta === 1 ? "" : "s"}` : "updated the checklist");
+  }
+  if(JSON.stringify(before.infoExtra) !== JSON.stringify(after.infoExtra)) parts.push("updated info fields");
+  if(JSON.stringify(before.parties) !== JSON.stringify(after.parties)) parts.push("updated parties/contacts");
+  if(JSON.stringify(before.milestones) !== JSON.stringify(after.milestones)) parts.push("updated milestones");
+  if(JSON.stringify(before.notes) !== JSON.stringify(after.notes)) parts.push("updated notes");
+  if(JSON.stringify(before.assigneeNames) !== JSON.stringify(after.assigneeNames)) parts.push("updated assignees");
+  if(JSON.stringify(before.ganttTasks) !== JSON.stringify(after.ganttTasks)) parts.push("updated the gantt chart");
+  if(JSON.stringify(before.stickyNotes) !== JSON.stringify(after.stickyNotes)) parts.push("updated sticky notes");
+  if(JSON.stringify(before.discussionCards) !== JSON.stringify(after.discussionCards)) parts.push("updated the discussion board");
+
+  if(!parts.length) return null;
+  const summary = parts.join("; ");
+  return summary.charAt(0).toUpperCase() + summary.slice(1);
+}
+
+/* Best-effort: writes one activity_log row and pushes it onto the local
+   feed immediately. Never blocks or fails a save — if the migration
+   hasn't been run yet, it just warns and the feed stays empty. */
+function logActivity(client, summary){
+  if(!summary) return;
+  const actor = getActorName() || "Someone";
+  const created_at = new Date().toISOString();
+  client.from("activity_log").insert({ project_id: PROJECT_ID, actor, summary })
+    .then(({error}) => { if(error) console.warn("Couldn't log activity (has the migration been run?):", error.message || error); });
+  state.activity = [{actor, summary, created_at}, ...((state && state.activity) || [])].slice(0, 30);
+  renderActivity();
+}
+
 async function persistNow(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
   if(!state || usingDemo) return;
+  const changeSummary = buildChangeSummary(editSessionSnapshot, state);
   const statusEl = document.getElementById("saveStatus");
   statusEl.textContent = "Saving…";
   const saveBtn = document.getElementById("saveBtn");
@@ -4246,6 +4430,7 @@ async function persistNow(){
 
     statusEl.textContent = "All changes saved";
     setTimeout(()=>{ if(statusEl.textContent === "All changes saved") statusEl.textContent = ""; }, 2500);
+    logActivity(client, changeSummary);
     // A successful save is a new checkpoint: if the user keeps editing
     // and then hits Discard, it should only undo what happened AFTER
     // this save, not roll all the way back to when edit mode was opened.
@@ -4308,7 +4493,7 @@ function updateEditBarVisibility(){
 document.getElementById("editToggleBtn").addEventListener("click", () => {
   if(usingDemo){ alert("Connect Supabase (URL, key, and PROJECT_ID) before editing live data."); return; }
   editMode = !editMode;
-  if(editMode) captureEditSnapshot();
+  if(editMode){ captureEditSnapshot(); ensureActorName(); }
   ganttPickerMode = null;
   updateEditBarVisibility();
   renderAll();
@@ -4362,6 +4547,7 @@ window.addEventListener("resize", updateTabsNav);
   }
   document.getElementById("editToggleBtn").style.display = usingDemo ? "none" : "inline-flex";
   renderAll();
+  subscribeActivity();
 })();
 </script>
 </body>
