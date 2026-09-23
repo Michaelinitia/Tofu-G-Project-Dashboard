@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Site Progress Dashboard</title>
+<title>Outlet Dashboard — Site Progress</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:            #F3F1EC;
@@ -29,7 +29,7 @@
   html,body{margin:0;padding:0;}
   body{
     background:var(--bg); color:var(--ink);
-    font-family:'Inter', -apple-system, sans-serif;
+    font-family:'Archivo', -apple-system, sans-serif;
     font-variant-numeric: tabular-nums; line-height:1.5;
     -webkit-font-smoothing:antialiased;
     /* Belt-and-suspenders: the gantt chart is the one thing on this page
@@ -40,7 +40,7 @@
     overflow-x:hidden;
   }
   h1,h2,h3,.display{
-    font-family:'Space Grotesk', 'Inter', sans-serif; font-weight:600;
+    font-family:'Archivo', 'Archivo', sans-serif; font-weight:600;
     letter-spacing:-0.01em; margin:0;
   }
   a{color:inherit;}
@@ -91,7 +91,7 @@
   .kicker{color:var(--steel); font-size:12.5px; letter-spacing:0.02em; margin-bottom:8px;}
   .project-title{color:#fff; font-size:32px; line-height:1.15;}
   .project-title-input{
-    font-family:'Space Grotesk', sans-serif; font-size:28px; font-weight:600;
+    font-family:'Archivo', sans-serif; font-size:28px; font-weight:600;
     background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.3);
     padding:6px 10px; width:100%; max-width:520px;
   }
@@ -111,7 +111,7 @@
   .header-right{display:flex; flex-direction:column; align-items:flex-end; gap:12px;}
   .hero-stats{display:flex; gap:14px;}
   .stat-box{ background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); padding:16px 22px; min-width:120px; }
-  .stat-box .num{font-family:'Space Grotesk', sans-serif; font-size:30px; font-weight:700; color:#fff;}
+  .stat-box .num{font-family:'Archivo', sans-serif; font-size:30px; font-weight:700; color:#fff;}
   .stat-box.actual .num{color:var(--orange);}
   .stat-box .lbl{font-size:11.5px; color:rgba(255,255,255,0.55); margin-top:4px;}
 
@@ -239,7 +239,7 @@
   /* Progress panels */
   .overall-row{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
   .overall-pct{
-    font-family:'Space Grotesk', sans-serif; font-size:32px; font-weight:700; color:var(--orange); flex:none;
+    font-family:'Archivo', sans-serif; font-size:32px; font-weight:700; color:var(--orange); flex:none;
     min-width:70px;
   }
   .overall-bar-track{flex:1; min-width:140px; height:10px; background:var(--line-soft); position:relative;}
@@ -399,7 +399,7 @@
   }
   .discussion-pile:active{cursor:grabbing;}
   .discussion-pile .pile-suit{font-size:19px; line-height:1;}
-  .discussion-pile .pile-label{font-family:'Space Grotesk', sans-serif; font-size:9.5px; font-weight:700; letter-spacing:0.05em;}
+  .discussion-pile .pile-label{font-family:'Archivo', sans-serif; font-size:9.5px; font-weight:700; letter-spacing:0.05em;}
   .discussion-pile.spades{background:var(--navy-deep);}
   .discussion-pile.diamonds{background:var(--suit-red);}
   .discussion-pile.clubs{background:var(--ink);}
@@ -412,7 +412,7 @@
   .discussion-card-header{
     /* Twice the original header size (font, padding, gap, close button) —
        letter-spacing is in em so it scales automatically with font-size. */
-    font-family:'Space Grotesk', sans-serif; font-size:19px; font-weight:700; letter-spacing:0.04em; color:#fff;
+    font-family:'Archivo', sans-serif; font-size:19px; font-weight:700; letter-spacing:0.04em; color:#fff;
     padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:grab;
   }
   .discussion-card-header:active{cursor:grabbing;}
@@ -446,7 +446,7 @@
   .checklist-columns.view-internal .checklist-column[data-list="external"],
   .checklist-columns.view-external .checklist-column[data-list="internal"]{display:none;}
   .checklist-column-title{
-    font-family:'Space Grotesk', 'Inter', sans-serif; font-weight:600; font-size:11px; letter-spacing:0.06em;
+    font-family:'Archivo', 'Archivo', sans-serif; font-weight:600; font-size:11px; letter-spacing:0.06em;
     text-transform:uppercase; color:var(--steel); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--line-soft);
   }
   .check-block{}
@@ -481,7 +481,7 @@
   .check-label-group{display:inline-flex; align-items:center; gap:6px; flex:1; min-width:150px;}
   .check-label-group .check-label{flex:none; min-width:0;}
   .check-item.parent-derived .check-label-group .check-label{
-    font-family:'Space Grotesk','Inter',sans-serif; font-weight:600; font-size:14.5px;
+    font-family:'Archivo','Archivo',sans-serif; font-weight:600; font-size:14.5px;
   }
   .check-item.parent-derived .check-collapse-btn{width:16px; height:16px; font-size:12px;}
 
@@ -714,6 +714,214 @@
 
   footer{text-align:center; font-size:11.5px; color:var(--ink-soft); padding:20px 0 36px;}
 </style>
+<style id="v2-theme">
+  /* ================= v2 THEME — navy / orange, rounded cards =================
+     Only presentation lives here. Every id, class and data-* hook the
+     script relies on is untouched. */
+  :root{
+    --bg:#fbeee4; --surface:#FFFFFF; --band:#f6e1d0;
+    --ink:#0e1b3a; --ink-soft:#4a5268;
+    --line:#e2ccb8; --line-soft:#f0ded0;
+    --navy:#0e1b3a; --navy-deep:#0e1b3a;
+    --orange:#f26722; --orange-ink:#a63f0a; --orange-tint:#fdece1;
+    --steel:#6b7385; --green:#1f8a4c; --amber:#f26722; --suit-red:#cf2e18;
+    --radius:10px; --gap:20px;
+  }
+  body{font-family:'Archivo', -apple-system, sans-serif;}
+  h1,h2,h3,.display{font-family:'Archivo', sans-serif; font-weight:800; letter-spacing:-0.015em;}
+  ::selection{background:#fbd2b7;}
+  a{color:var(--orange-ink);}
+  a:hover{color:var(--orange);}
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible{outline:2px solid var(--orange); outline-offset:2px;}
+
+  /* all buttons on white */
+  .btn{border-radius:8px; font-weight:700;}
+  .btn-primary{background:#fff; color:var(--orange-ink); border-color:var(--orange);}
+  .btn-primary:hover{background:var(--orange-tint);}
+  .btn-ghost{background:#fff; color:var(--ink); border-color:#fff;}
+  .btn-ghost:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .btn-outline{background:#fff; color:var(--ink); border-color:var(--line);}
+  .btn-outline:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .add-row-btn, .add-sub-row-btn{background:#fff; border-radius:8px; color:var(--ink);}
+  .add-row-btn:hover, .add-sub-row-btn:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .row-del, .sub-row-del, .row-move-btn, .sub-row-move-btn, .row-order button{background:#fff; border-radius:4px;}
+  .sticky-note-btn{background:#fff; border-radius:8px;}
+  .file-label{border-radius:8px;}
+  .outlet-delete-btn{background:#fff; border-radius:8px;}
+  .gantt-deps-toggle, .gantt-color-reset{background:#fff; border-radius:6px;}
+
+  /* toolbar */
+  .v2-toolbar{background:var(--band); border-bottom:1px solid var(--line);}
+  .v2-toolbar-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 28px; flex-wrap:wrap;}
+  .v2-toolbar-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-width:0;}
+  .settings-btn, .edit-toggle{
+    background:#fff; color:var(--ink); border:1px solid var(--line); border-radius:8px;
+    font-family:inherit; font-size:13px; font-weight:700; padding:8px 14px; text-decoration:none;
+  }
+  .settings-btn:hover, .edit-toggle:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .outlet-select{background:#fff; color:var(--ink); border:1px solid var(--line); border-radius:8px; font-size:14px; font-weight:700; padding:8px 10px; max-width:300px;}
+
+  /* hero */
+  .v2-hero{background:var(--ink); color:#fff; padding:44px 0 34px; position:relative; overflow:hidden;}
+  .v2-hero::after{content:""; position:absolute; right:-90px; top:-90px; width:320px; height:320px; border:34px solid rgba(242,103,34,0.16); border-radius:50%; pointer-events:none;}
+  .v2-hero .wrap{position:relative; z-index:1;}
+  .v2-hero .kicker{color:var(--orange); font-size:11px; font-weight:700; letter-spacing:0.1em; margin-bottom:14px;}
+  .project-title{color:#fff; font-size:60px; line-height:0.98; font-weight:800; letter-spacing:-0.03em; max-width:18ch; text-wrap:balance;}
+  .project-title-input{font-family:'Archivo', sans-serif; font-size:32px; font-weight:800; border-radius:8px;}
+  .v2-hero-meta{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:18px;}
+  .status-pill{margin-top:0; background:var(--orange); border:0; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:5px 10px;}
+  .status-pill .status-dot{background:#fff;}
+  .status-pill.ok{background:var(--green);}
+  .status-pill.ok .status-dot{background:#fff;}
+  .status-pill.complete{background:#6b7385;}
+  .status-select{margin-top:0; border-radius:6px;}
+  .project-sub{color:#aebbd9; font-size:13px; margin-top:0; letter-spacing:0.02em;}
+  .v2-hero-rule{width:96px; height:6px; background:var(--orange); margin-top:22px;}
+
+  /* page rhythm */
+  main{padding:22px 0 60px;}
+  main.wrap > * + *{margin-top:20px;}
+
+  /* panels = rounded white cards, collapsible */
+  .panel{background:#fff; border:1px solid var(--line); border-radius:14px; padding:0;}
+  .panel + .panel{margin-top:0;}
+  .panel-title{
+    margin:0; padding:15px 20px; border-bottom:1px solid var(--line-soft);
+    font-family:'Archivo', sans-serif; font-size:20px; font-weight:800; letter-spacing:-0.01em;
+    cursor:pointer; user-select:none; gap:12px;
+  }
+  .panel-title:hover{color:var(--ink);}
+  .panel-title .title-left{gap:11px;}
+  .panel-title .tick{display:none;}
+  .v2-caret{display:inline-block; width:12px; font-size:11px; line-height:1; color:var(--orange); transition:transform 0.15s ease;}
+  .panel.is-collapsed .v2-caret{transform:rotate(-90deg);}
+  .panel.is-collapsed > .panel-body{display:none;}
+  .panel.is-collapsed > .panel-title{border-bottom-color:transparent;}
+  .panel-body{padding:18px 20px 20px;}
+  .v2-count{font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-soft);}
+  .gantt-body{margin-top:0;}
+  .gantt-body.is-collapsed{display:none;}
+  .gantt-panel .panel-title:hover{color:var(--orange-ink);}
+  .gantt-collapse-icon{color:var(--orange);}
+
+  /* paired list panels */
+  .v2-pair{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; align-items:start;}
+  .v2-pair > .panel{margin-top:0;}
+  .v2-mini .panel-title{font-size:14px; letter-spacing:0.06em; text-transform:uppercase; padding:14px 18px;}
+  .v2-mini .panel-body{padding:0 18px 12px;}
+  .v2-row{display:flex; align-items:baseline; justify-content:space-between; gap:18px; padding:11px 0; border-top:1px solid var(--line-soft);}
+  .v2-row:first-child{border-top:0;}
+  .v2-k{font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);}
+  .v2-k.hot{color:var(--orange-ink);}
+  .v2-s{font-size:12.5px; color:var(--ink-soft); margin-top:3px;}
+  .v2-v{font-family:'Archivo', sans-serif; font-weight:800; font-size:24px; line-height:1.1; letter-spacing:-0.01em; white-space:nowrap; color:var(--ink);}
+  .v2-v.txt{font-size:16px; white-space:normal; text-align:right; max-width:60%;}
+
+  /* weekly roadblocks row */
+  .v2-rb-row{display:grid; grid-template-columns:236px minmax(0,1fr) 96px; gap:18px; align-items:stretch;}
+  .v2-parties{display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg); min-width:0;}
+  .v2-parties-spine{flex:none; width:34px; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center;}
+  .v2-parties-spine span{writing-mode:vertical-rl; transform:rotate(180deg); font-weight:800; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; white-space:nowrap;}
+  .v2-parties-body{flex:1; min-width:0; padding:8px 14px; max-height:430px; overflow:auto;}
+  .party{padding:9px 0; border-bottom:1px solid var(--line);}
+  .party-role{font-size:10.5px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--steel);}
+  .party-name{font-size:14px; font-weight:700;}
+  .discussion-board{
+    height:430px; border:2px solid var(--ink); border-radius:10px;
+    background-color:#fff;
+    background-image:linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:28px 28px;
+  }
+  .discussion-board.drag-over{border-color:var(--orange); background-color:var(--orange-tint);}
+  .discussion-board-empty{font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--steel);}
+  .discussion-piles{width:auto; display:flex; flex-direction:column; gap:14px; align-items:flex-start;}
+  .v2-piles-label{font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-soft); border-bottom:1px solid var(--line); padding-bottom:6px; width:80px;}
+  .discussion-pile{
+    flex:none; width:80px; height:112px; background:#fff; color:var(--ink); border:1px solid var(--ink); border-radius:6px;
+    justify-content:center; gap:6px;
+    box-shadow:3px 3px 0 -1px #fff, 3px 3px 0 0 var(--line), 6px 6px 0 -1px #fff, 6px 6px 0 0 var(--line);
+  }
+  .discussion-pile:hover{border-color:var(--orange);}
+  .discussion-pile .pile-suit{font-size:30px;}
+  .discussion-pile .pile-label{font-family:'Archivo', sans-serif; font-size:8px; font-weight:800; letter-spacing:0.06em;}
+  .discussion-pile.spades, .discussion-pile.clubs{background:#fff; color:var(--ink);}
+  .discussion-pile.diamonds{background:#fff; color:var(--orange);}
+  .discussion-card{width:150px; background:#fff; border:1px solid var(--ink); border-radius:6px; box-shadow:0 6px 16px rgba(14,27,58,0.18);}
+  .discussion-card.spades, .discussion-card.diamonds, .discussion-card.clubs{background:#fff;}
+  .discussion-card-header{font-family:'Archivo', sans-serif; font-size:10px; font-weight:800; letter-spacing:0.08em; padding:7px 8px; color:var(--ink); border-bottom:1px solid var(--ink);}
+  .discussion-card.spades .discussion-card-header, .discussion-card.clubs .discussion-card-header{background:#e7e5e0; color:var(--ink);}
+  .discussion-card.diamonds .discussion-card-header{background:var(--orange-tint); color:var(--orange-ink);}
+  .discussion-card-del{color:var(--ink-soft); font-size:16px;}
+  .discussion-card-del:hover{color:var(--orange);}
+  .discussion-card textarea{font-size:12px; line-height:1.35; min-height:172px; padding:8px;}
+
+  /* checklist */
+  .v2-progress{display:grid; grid-template-columns:auto minmax(0,1fr); gap:0 26px; align-items:center; padding-bottom:20px; margin-bottom:18px; border-bottom:1px solid var(--line-soft);}
+  .v2-ring{position:relative; width:120px; height:120px;}
+  .v2-ring svg{display:block; transform:rotate(-90deg);}
+  .v2-ring .overall-pct{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:800; color:var(--ink); min-width:0;}
+  .overall-bar-track{display:none;}
+  .overall-count{font-size:14px; color:var(--ink-soft);}
+  .v2-progress-note{font-size:13px; color:var(--ink-soft); margin:6px 0 0; max-width:56ch;}
+  .checklist-view-btn{background:#fff; font-weight:700;}
+  .checklist-view-btn:hover{border-color:var(--orange); color:var(--orange-ink);}
+  .checklist-view-btn.is-active{background:#fff; border-color:var(--orange); color:var(--orange-ink);}
+  .checklist-columns{grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:32px;}
+  .checklist-column-title{font-size:14px; font-weight:800; letter-spacing:0.06em; color:var(--ink); border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:12px;}
+  .check-item.parent-derived .check-label-group .check-label{font-family:'Archivo', sans-serif; font-weight:700;}
+  .check-item input[type="checkbox"]{accent-color:var(--green);}
+  .check-edit-row, .sub-edit-row, .gantt-edit-row{border-radius:8px;}
+
+  /* photos, tabs */
+  .tab-btn{background:#fff; border-radius:8px; color:var(--ink);}
+  .tab-btn.active{background:#fff; color:var(--orange-ink); border-color:var(--orange);}
+  .tab-btn.active .tab-current-dot{background:#3aa76d;}
+  .tabs{gap:6px;}
+  .tabs-nav{background:#fff; border-radius:6px;}
+  .photo-tile{border-radius:8px; overflow:hidden;}
+  .gantt-scroll-outer{border-radius:8px;}
+
+  /* timeline dots */
+  .tl-item.active::before{background:var(--orange); border-color:var(--orange);}
+
+  /* modal */
+  .settings-modal{border-radius:14px;}
+  .settings-modal-header{background:var(--ink);}
+
+  footer{color:var(--ink-soft);}
+
+  @media (max-width: 1000px){
+    .v2-rb-row{grid-template-columns:200px minmax(0,1fr) 88px;}
+  }
+  @media (max-width: 760px){
+    .wrap{padding:0 16px;}
+    #editBar .wrap{padding:10px 16px;}
+    .v2-toolbar-row{padding:10px 16px;}
+    .outlet-switcher{flex:1 1 100%;}
+    .outlet-select{flex:1; max-width:none; min-width:0;}
+    .v2-hero{padding:30px 0 26px;}
+    .v2-hero::after{width:200px; height:200px; right:-70px; top:-70px; border-width:24px;}
+    .project-title{font-size:38px;}
+    .v2-pair{grid-template-columns:1fr;}
+    .panel-title{font-size:17px; padding:13px 16px;}
+    .panel-body{padding:14px 16px 16px;}
+    .v2-mini .panel-body{padding:0 16px 10px;}
+    .v2-rb-row{grid-template-columns:1fr; gap:14px;}
+    .v2-parties{order:1; flex-direction:column;}
+    .v2-parties-spine{width:auto; padding:8px 12px; justify-content:flex-start;}
+    .v2-parties-spine span{writing-mode:horizontal-tb; transform:none;}
+    .v2-parties-body{max-height:none;}
+    .discussion-piles{order:2; flex-direction:row; flex-wrap:wrap; align-items:center; gap:14px;}
+    .v2-piles-label{width:100%;}
+    .discussion-pile{width:70px; height:98px;}
+    .discussion-board{order:3; height:380px;}
+    .v2-progress{grid-template-columns:1fr; gap:14px; justify-items:start;}
+    .checklist-columns{grid-template-columns:1fr;}
+    .gantt-grid-labels{width:128px;}
+    .v2-v.txt{max-width:55%;}
+    .settings-modal{max-height:90vh;}
+  }
+</style>
 </head>
 <body>
 
@@ -731,166 +939,202 @@
   </div>
 </div>
 
-<header class="blueprint">
-  <div class="wrap">
-    <div class="header-row">
-      <div>
-        <div class="kicker" id="kicker">WEEKLY PROGRESS &mdash; SITE DASHBOARD</div>
-        <h1 class="project-title" id="projectTitle">Loading project&hellip;</h1>
-        <input class="project-title-input" id="projectTitleInput" style="display:none;" data-field="name">
-        <div class="project-sub" id="projectSub"></div>
-        <div class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusText">Checking status</span></div>
-        <select class="status-select" id="statusSelect" style="display:none;" data-field="status">
-          <option value="on_track">On track</option>
-          <option value="delayed">Delayed</option>
-          <option value="complete">Complete</option>
-        </select>
-      </div>
-      <div class="header-right">
-        <a class="settings-btn" id="overviewLink" href="overview.html" title="View all outlets">◱ Overview</a>
-        <div class="outlet-switcher" id="outletSwitcher" style="display:none;">
-          <select class="outlet-select" id="outletSelect" style="display:none;"></select>
-          <button class="settings-btn" id="settingsBtn" title="Manage outlets">⚙ Outlets</button>
-        </div>
-        <button class="edit-toggle" id="editToggleBtn" style="display:none;">✎ <span id="editToggleLabel">Edit</span></button>
-        <div class="hero-stats bracketed">
-          <div class="stat-box actual"><div class="num" id="actualPct">&mdash;</div><div class="lbl">Overall complete</div></div>
-          <div class="stat-box"><div class="num" id="planPct">&mdash;</div><div class="lbl">Items checked off</div></div>
-        </div>
+
+<div class="v2-toolbar">
+  <div class="v2-toolbar-row">
+    <div class="v2-toolbar-left">
+      <a class="settings-btn" id="overviewLink" href="overview.html" title="View all outlets">← Portfolio</a>
+      <div class="outlet-switcher" id="outletSwitcher" style="display:none;">
+        <select class="outlet-select" id="outletSelect" style="display:none;"></select>
+        <button class="settings-btn" id="settingsBtn" title="Manage outlets">Manage outlets</button>
       </div>
     </div>
+    <button class="edit-toggle" id="editToggleBtn" style="display:none;">✎ <span id="editToggleLabel">Edit</span></button>
+  </div>
+</div>
+
+<header class="v2-hero">
+  <div class="wrap">
+    <div class="kicker" id="kicker">WEEKLY PROGRESS &mdash; SITE DASHBOARD</div>
+    <h1 class="project-title" id="projectTitle">Loading project&hellip;</h1>
+    <input class="project-title-input" id="projectTitleInput" style="display:none;" data-field="name">
+    <div class="v2-hero-meta">
+      <div class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusText">Checking status</span></div>
+      <select class="status-select" id="statusSelect" style="display:none;" data-field="status">
+        <option value="on_track">On track</option>
+        <option value="delayed">Delayed</option>
+        <option value="complete">Complete</option>
+      </select>
+      <div class="project-sub" id="projectSub"></div>
+    </div>
+    <div class="v2-hero-rule"></div>
   </div>
 </header>
 
 <main class="wrap">
-  <div class="grid">
 
-    <!-- LEFT COLUMN -->
-    <div>
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Project information</span></div>
+  <div class="v2-pair">
+    <div class="panel v2-mini" data-collapse="metrics">
+      <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Key metrics</span><span class="v2-count">5 signals</span></div>
+      <div class="panel-body">
+          <div class="v2-row"><div><div class="v2-k hot">Days to opening</div><div class="v2-s" id="mDaysSub">—</div></div><div class="v2-v" id="mDays">—</div></div>
+          <div class="v2-row"><div><div class="v2-k hot">Slip vs original</div><div class="v2-s" id="mSlipSub">—</div></div><div class="v2-v" id="mSlip">—</div></div>
+          <div class="v2-row"><div><div class="v2-k hot">Overdue items</div><div class="v2-s" id="mOverdueSub">—</div></div><div class="v2-v" id="mOverdue">—</div></div>
+          <div class="v2-row"><div><div class="v2-k hot">Open roadblocks</div><div class="v2-s" id="mBlockersSub">—</div></div><div class="v2-v" id="mBlockers">—</div></div>
+          <div class="v2-row"><div><div class="v2-k hot">Checklist closed</div><div class="v2-s"><span id="planPct">&mdash;</span> items checked off</div></div><div class="v2-v" id="actualPct">&mdash;</div></div>
+      </div>
+    </div>
+    <div class="panel v2-mini" data-collapse="details">
+      <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Outlet details</span><span class="v2-count" id="dCount">4 fields</span></div>
+      <div class="panel-body" id="dBody">
+          <div class="v2-row"><div><div class="v2-k">Next milestone</div><div class="v2-s" id="dNextSub">—</div></div><div class="v2-v txt" id="dNext">—</div></div>
+          <div class="v2-row"><div><div class="v2-k">Target live</div><div class="v2-s" id="dTargetSub">—</div></div><div class="v2-v txt" id="dTarget">—</div></div>
+          <div class="v2-row"><div><div class="v2-k">Construction period</div><div class="v2-s" id="dPeriodSub">—</div></div><div class="v2-v txt" id="dPeriod">—</div></div>
+          <div class="v2-row"><div><div class="v2-k">Lead party</div><div class="v2-s" id="dLeadSub">—</div></div><div class="v2-v txt" id="dLead">—</div></div>
+        <div id="dExtra"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" data-collapse="roadblocks">
+    <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Weekly Roadblocks</span><span class="v2-count" id="rbCount"></span></div>
+    <div class="panel-body">
+      <div class="v2-rb-row">
+        <aside class="v2-parties">
+          <div class="v2-parties-spine"><span>Parties engaged</span></div>
+          <div class="v2-parties-body">
+            <div id="partiesList"></div>
+            <div id="partiesEdit" style="display:none;"></div>
+          </div>
+        </aside>
+        <div class="discussion-board" id="discussionBoard">
+          <div class="discussion-board-empty" id="discussionBoardEmpty">Drag a card in from a pile to raise a roadblock.</div>
+        </div>
+        <div class="discussion-piles">
+          <div class="v2-piles-label">Piles</div>
+          <div class="discussion-pile spades" data-type="spades" title="Drag onto the board to add an approval card">
+            <span class="pile-suit">♠</span><span class="pile-label">APPROVAL</span>
+          </div>
+          <div class="discussion-pile diamonds" data-type="diamonds" title="Drag onto the board to add a payment card">
+            <span class="pile-suit">♥</span><span class="pile-label">PAYMENT</span>
+          </div>
+          <div class="discussion-pile clubs" data-type="clubs" title="Drag onto the board to add a submission card">
+            <span class="pile-suit">♣</span><span class="pile-label">SUBMISSION</span>
+          </div>
+        </div>
+      </div>
+      <p class="field-hint" style="margin-top:12px;">Drag a card from a pile onto the board (or tap a pile), then type on it. Click a card to bring it to the front.</p>
+    </div>
+  </div>
+
+  <div class="panel gantt-panel">
+    <div class="panel-title" id="ganttPanelTitle" title="Click to expand/collapse">
+      <span class="title-left"><span class="tick"></span>Schedule</span>
+      <button type="button" class="gantt-collapse-icon is-open" id="ganttCollapseIcon" title="Toggle gantt chart" aria-expanded="true">▸</button>
+    </div>
+    <div class="gantt-body panel-body" id="ganttBody">
+      <div class="gantt-toolbar" id="ganttToolbar" style="display:none;">
+        <button type="button" class="add-row-btn" id="ganttAddFromChecklistBtn">+ From checklist</button>
+        <button type="button" class="add-row-btn" id="ganttAddFromScheduleBtn">+ From schedule</button>
+        <button type="button" class="add-row-btn" id="ganttAddCustomBtn">+ Custom task</button>
+      </div>
+      <div id="ganttReadonly"></div>
+      <div id="ganttEdit" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="panel" data-collapse="checklist">
+    <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Checklist</span><button type="button" id="addStickyNoteBtn" class="sticky-note-btn" title="Add a sticky note">🗒️</button></div>
+    <div class="panel-body">
+      <div class="v2-progress">
+        <div class="v2-ring">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--line-soft)" stroke-width="12"></circle>
+            <circle id="v2RingFill" cx="60" cy="60" r="50" fill="none" stroke="var(--green)" stroke-width="12" stroke-dasharray="0 314.16" style="transition:stroke-dasharray 0.3s ease;"></circle>
+          </svg>
+          <div class="overall-pct" id="overallPct">0%</div>
+        </div>
+        <div>
+          <div class="overall-count" id="overallCount">0 / 0 items</div>
+          <div class="overall-bar-track"><div class="overall-bar-fill" id="overallBarFill"></div></div>
+          <p class="v2-progress-note">Checklist items closed — a count of tasks ticked, not physical build progress.</p>
+        </div>
+      </div>
+      <div class="checklist-view-toggle" id="checklistViewToggle">
+        <button type="button" class="checklist-view-btn is-active" data-view="overall">Overall</button>
+        <button type="button" class="checklist-view-btn" data-view="internal">Internal</button>
+        <button type="button" class="checklist-view-btn" data-view="external">External</button>
+      </div>
+      <div class="checklist-columns" id="checklist">
+        <div class="checklist-column" data-list="internal">
+          <div class="checklist-column-title">Internal</div>
+          <div class="check-list" id="checklistInternal"></div>
+        </div>
+        <div class="checklist-column" data-list="external">
+          <div class="checklist-column-title">External</div>
+          <div class="check-list" id="checklistExternal"></div>
+        </div>
+      </div>
+      <div id="checklistEdit" class="checklist-edit checklist-columns" style="display:none;">
+        <div class="checklist-column">
+          <div class="checklist-column-title">Internal</div>
+          <div id="checklistEditInternal"></div>
+          <button class="add-row-btn" data-list="internal">+ Add internal item</button>
+        </div>
+        <div class="checklist-column">
+          <div class="checklist-column-title">External</div>
+          <div id="checklistEditExternal"></div>
+          <button class="add-row-btn" data-list="external">+ Add external item</button>
+        </div>
+      </div>
+      <div id="assigneeNamesEdit" class="checklist-edit" style="display:none;">
+        <div class="checklist-column-title">Assignable names (internal checklist)</div>
+        <div id="assigneeNamesEditList"></div>
+        <button class="add-row-btn" id="addAssigneeNameBtn">+ Add name</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="v2-pair">
+    <div class="panel" data-collapse="info">
+      <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Project information</span></div>
+      <div class="panel-body">
         <table class="info-table" id="infoTable"></table>
         <div id="infoEdit" style="display:none;"></div>
       </div>
-
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Parties engaged</span></div>
-        <div id="partiesList"></div>
-        <div id="partiesEdit" style="display:none;"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Schedule</span></div>
+    </div>
+    <div class="panel" data-collapse="milestones">
+      <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Milestones</span></div>
+      <div class="panel-body">
         <div class="timeline" id="timeline"></div>
         <div id="timelineEdit" style="display:none;"></div>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT COLUMN -->
-    <div>
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Overall project completion</span></div>
-        <div class="overall-row">
-          <div class="overall-pct" id="overallPct">0%</div>
-          <div class="overall-bar-track"><div class="overall-bar-fill" id="overallBarFill"></div></div>
-          <div class="overall-count" id="overallCount">0 / 0 items</div>
-        </div>
+  <div class="panel" data-collapse="notes">
+    <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Notes</span></div>
+    <div class="panel-body">
+      <div class="notes-grid" id="notesGrid"></div>
+      <div id="notesEdit" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="panel" data-collapse="photos">
+    <div class="panel-title"><span class="title-left"><span class="v2-caret">▾</span>Site photos</span></div>
+    <div class="panel-body">
+      <div class="tabs-carousel">
+        <button class="tabs-nav" id="photoTabsPrev" type="button" aria-label="Scroll weeks left" hidden>‹</button>
+        <div class="tabs" id="photoTabs"></div>
+        <button class="tabs-nav" id="photoTabsNext" type="button" aria-label="Scroll weeks right" hidden>›</button>
       </div>
-
-      <div class="panel gantt-panel">
-        <div class="panel-title" id="ganttPanelTitle" title="Click to expand/collapse">
-          <span class="title-left"><span class="tick"></span>Gantt chart</span>
-          <button type="button" class="gantt-collapse-icon is-open" id="ganttCollapseIcon" title="Toggle gantt chart" aria-expanded="true">▸</button>
-        </div>
-        <div class="gantt-body" id="ganttBody">
-          <div class="gantt-toolbar" id="ganttToolbar" style="display:none;">
-            <button type="button" class="add-row-btn" id="ganttAddFromChecklistBtn">+ From checklist</button>
-            <button type="button" class="add-row-btn" id="ganttAddFromScheduleBtn">+ From schedule</button>
-            <button type="button" class="add-row-btn" id="ganttAddCustomBtn">+ Custom task</button>
-          </div>
-          <div id="ganttReadonly"></div>
-          <div id="ganttEdit" style="display:none;"></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Discussion board</span></div>
-        <div class="discussion-wrap">
-          <div class="discussion-board" id="discussionBoard">
-            <div class="discussion-board-empty" id="discussionBoardEmpty">Drag a card in from a pile to start a discussion.</div>
-          </div>
-          <div class="discussion-piles">
-            <div class="discussion-pile spades" data-type="spades" title="Drag onto the board to add an approval card">
-              <span class="pile-suit">♠</span><span class="pile-label">APPROVAL</span>
-            </div>
-            <div class="discussion-pile diamonds" data-type="diamonds" title="Drag onto the board to add a purchase card">
-              <span class="pile-suit">♦</span><span class="pile-label">PURCHASE</span>
-            </div>
-            <div class="discussion-pile clubs" data-type="clubs" title="Drag onto the board to add a submission card">
-              <span class="pile-suit">♣</span><span class="pile-label">SUBMISSION</span>
-            </div>
-          </div>
-        </div>
-        <p class="field-hint" style="margin-top:12px;">Drag a card from a pile onto the board, then type on it. Click a card to bring it to the front.</p>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Checklist</span><button type="button" id="addStickyNoteBtn" class="sticky-note-btn" title="Add a sticky note">🗒️</button></div>
-        <div class="checklist-view-toggle" id="checklistViewToggle">
-          <button type="button" class="checklist-view-btn is-active" data-view="overall">Overall</button>
-          <button type="button" class="checklist-view-btn" data-view="internal">Internal</button>
-          <button type="button" class="checklist-view-btn" data-view="external">External</button>
-        </div>
-        <div class="checklist-columns" id="checklist">
-          <div class="checklist-column" data-list="internal">
-            <div class="checklist-column-title">Internal</div>
-            <div class="check-list" id="checklistInternal"></div>
-          </div>
-          <div class="checklist-column" data-list="external">
-            <div class="checklist-column-title">External</div>
-            <div class="check-list" id="checklistExternal"></div>
-          </div>
-        </div>
-        <div id="checklistEdit" class="checklist-edit checklist-columns" style="display:none;">
-          <div class="checklist-column">
-            <div class="checklist-column-title">Internal</div>
-            <div id="checklistEditInternal"></div>
-            <button class="add-row-btn" data-list="internal">+ Add internal item</button>
-          </div>
-          <div class="checklist-column">
-            <div class="checklist-column-title">External</div>
-            <div id="checklistEditExternal"></div>
-            <button class="add-row-btn" data-list="external">+ Add external item</button>
-          </div>
-        </div>
-        <div id="assigneeNamesEdit" class="checklist-edit" style="display:none;">
-          <div class="checklist-column-title">Assignable names (internal checklist)</div>
-          <div id="assigneeNamesEditList"></div>
-          <button class="add-row-btn" id="addAssigneeNameBtn">+ Add name</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Notes</span></div>
-        <div class="notes-grid" id="notesGrid"></div>
-        <div id="notesEdit" style="display:none;"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span class="title-left"><span class="tick"></span>Site photos</span></div>
-        <div class="tabs-carousel">
-          <button class="tabs-nav" id="photoTabsPrev" type="button" aria-label="Scroll weeks left" hidden>‹</button>
-          <div class="tabs" id="photoTabs"></div>
-          <button class="tabs-nav" id="photoTabsNext" type="button" aria-label="Scroll weeks right" hidden>›</button>
-        </div>
-        <div id="photoTabsets"></div>
-        <div class="add-week-row" id="addWeekRow" style="display:none;">
-          <button class="btn btn-outline" id="addWeekBtn">+ Add week</button>
-        </div>
+      <div id="photoTabsets"></div>
+      <div class="add-week-row" id="addWeekRow" style="display:none;">
+        <button class="btn btn-outline" id="addWeekBtn">+ Add week</button>
       </div>
     </div>
-
   </div>
+
 </main>
 
 <div class="settings-overlay" id="settingsOverlay">
@@ -912,6 +1156,38 @@
 </div>
 
 <footer>Updated automatically from Supabase &middot; <span id="lastSync">&mdash;</span></footer>
+
+
+<script>
+/* v2 — collapsible panels. UI state only; remembered per browser. */
+(function(){
+  var KEY = "tofuV2Collapsed", saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; }catch(e){}
+  document.querySelectorAll(".panel[data-collapse]").forEach(function(panel){
+    var id = panel.getAttribute("data-collapse");
+    var title = panel.querySelector(":scope > .panel-title");
+    if(!title) return;
+    if(saved[id]) panel.classList.add("is-collapsed");
+    title.setAttribute("role", "button");
+    title.setAttribute("tabindex", "0");
+    function toggle(){
+      panel.classList.toggle("is-collapsed");
+      saved[id] = panel.classList.contains("is-collapsed");
+      title.setAttribute("aria-expanded", String(!saved[id]));
+      try{ localStorage.setItem(KEY, JSON.stringify(saved)); }catch(e){}
+    }
+    title.setAttribute("aria-expanded", String(!saved[id]));
+    title.addEventListener("click", function(e){
+      if(e.target.closest("button, a, input, select, textarea, label")) return;
+      toggle();
+    });
+    title.addEventListener("keydown", function(e){
+      if(e.target !== title) return;
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); }
+    });
+  });
+})();
+</script>
 
 <script type="module">
 /* ================================================================
@@ -1642,6 +1918,7 @@ function renderProgressFromChecklist(){
 
   document.getElementById("actualPct").textContent = overallPct + "%";
   document.getElementById("planPct").textContent = `${doneCount}/${total}`;
+  renderKeyMetrics();
 }
 
 /* ---------------------------------------------------------------
@@ -2137,9 +2414,9 @@ document.getElementById("ganttEdit").addEventListener("change", e => {
    the front. Always live (not gated on edit mode); position + text
    autosave, same as sticky notes.
 --------------------------------------------------------------- */
-const DISCUSSION_CARD_LABELS = { spades:"♠ APPROVAL", diamonds:"♦ PURCHASE", clubs:"♣ SUBMISSION" };
+const DISCUSSION_CARD_LABELS = { spades:"♠ APPROVAL", diamonds:"♥ PAYMENT", clubs:"♣ SUBMISSION" };
 // Poker card proportions (2.5in x 3.5in), double the original default size.
-const DISCUSSION_CARD_W = 256, DISCUSSION_CARD_H = Math.round(256 * 3.5 / 2.5);
+const DISCUSSION_CARD_W = 150, DISCUSSION_CARD_H = Math.round(150 * 3.5 / 2.5);
 
 function renderDiscussionCards(){
   const board = document.getElementById("discussionBoard");
@@ -2164,6 +2441,7 @@ function renderDiscussionCards(){
     `;
     board.appendChild(el);
   });
+  renderKeyMetrics();
 }
 
 function discussionCardsMaxZ(){
@@ -2854,6 +3132,82 @@ function applyAutoStatus(){
     }
   }
 }
+
+/* ---------------------------------------------------------------
+   v2 — KEY METRICS + OUTLET DETAILS (read-only, derived from state)
+--------------------------------------------------------------- */
+function renderKeyMetrics(){
+  if(!state || !document.getElementById("mDays")) return;
+  const p = state.project || {};
+  const DAY = 86400000;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const toDay = s => { if(!s) return null; const x = new Date(s); if(isNaN(x)) return null; x.setHours(0,0,0,0); return x; };
+  const set = (id, txt, color) => { const el = document.getElementById(id); if(!el) return; el.textContent = txt; el.style.color = color || ""; };
+  const HOT = "var(--orange)", OK = "var(--green)";
+
+  const tl = toDay(p.target_live), otl = toDay(p.original_target_live);
+  if(tl){
+    const d = Math.round((tl - today) / DAY);
+    set("mDays", d >= 0 ? String(d) : Math.abs(d) + "d past", d < 0 ? HOT : "");
+    set("mDaysSub", fmtDate(p.target_live));
+  } else { set("mDays", "—"); set("mDaysSub", "No target live date set"); }
+
+  if(tl && otl){
+    const s = Math.round((tl - otl) / DAY);
+    set("mSlip", s > 0 ? "+" + s + "d" : (s < 0 ? s + "d" : "0d"), s > 0 ? HOT : OK);
+    set("mSlipSub", "was " + fmtDate(p.original_target_live));
+  } else { set("mSlip", "—"); set("mSlipSub", "Original date not set"); }
+
+  let overdue = 0, oldest = 0;
+  const walk = items => (items || []).forEach(it => {
+    const due = toDay(it.due_date);
+    if(due && due < today && !isItemDone(it)){ overdue++; oldest = Math.max(oldest, Math.round((today - due) / DAY)); }
+    if(it.has_subchecklist) walk(it.subitems);
+  });
+  walk(state.checklist);
+  set("mOverdue", String(overdue), overdue ? HOT : OK);
+  set("mOverdueSub", overdue ? "oldest " + oldest + " day" + (oldest === 1 ? "" : "s") + " late" : "Nothing past its due date");
+
+  const cards = state.discussionCards || [];
+  const n = { spades:0, diamonds:0, clubs:0 };
+  cards.forEach(c => { n[c.type] = (n[c.type] || 0) + 1; });
+  set("mBlockers", String(cards.length), cards.length ? HOT : OK);
+  set("mBlockersSub", cards.length ? `${n.spades} approval · ${n.diamonds} payment · ${n.clubs} submission` : "Board is clear");
+  set("rbCount", cards.length + " on the board");
+
+  const total = (state.checklist || []).length;
+  const pct = total ? Math.round(state.checklist.reduce((s,c) => s + itemPct(c), 0) / total) : 0;
+  const ring = document.getElementById("v2RingFill");
+  if(ring){ const C = 2 * Math.PI * 50; ring.setAttribute("stroke-dasharray", (C * pct / 100).toFixed(1) + " " + C.toFixed(1)); }
+
+  const ms = (state.milestones || []).filter(m => m.state !== "done")
+    .sort((a,b) => (toDay(a.date) || Infinity) - (toDay(b.date) || Infinity));
+  const next = ms[0];
+  if(next){
+    const nd = toDay(next.date);
+    const diff = nd ? Math.round((nd - today) / DAY) : null;
+    set("dNext", next.name || "Untitled milestone");
+    set("dNextSub", nd ? fmtDate(next.date) + (diff >= 0 ? " · in " + diff + " day" + (diff === 1 ? "" : "s") : " · " + Math.abs(diff) + " days late") : "No date set");
+  } else { set("dNext", "—"); set("dNextSub", "No open milestones"); }
+
+  set("dTarget", tl ? fmtDate(p.target_live) : "—");
+  set("dTargetSub", otl ? "Original " + fmtDate(p.original_target_live) : "Original not set");
+  set("dPeriod", p.period_start || p.period_end ? fmtDate(p.period_start) + " – " + fmtDate(p.period_end) : "—");
+  set("dPeriodSub", p.code ? "Code " + p.code : "");
+
+  const lead = (state.parties || [])[0];
+  set("dLead", lead ? (lead.name || "—") : "—");
+  set("dLeadSub", lead ? (lead.role || "") : "Add parties in edit mode");
+
+  const extra = (state.infoExtra || []).filter(f => f.label || f.value);
+  const host = document.getElementById("dExtra");
+  if(host){
+    host.innerHTML = extra.map(f => `<div class="v2-row"><div><div class="v2-k">${esc(f.label) || "—"}</div></div><div class="v2-v txt">${f.isDate ? fmtDate(f.value) : (esc(f.value) || "—")}</div></div>`).join("");
+  }
+  set("dCount", (4 + extra.length) + " fields");
+}
+document.addEventListener("change", () => setTimeout(renderKeyMetrics, 0));
+document.addEventListener("input", e => { if(e.target.closest && e.target.closest("#infoEdit, #timelineEdit, #partiesEdit")) setTimeout(renderKeyMetrics, 0); });
 
 function renderAll(){
   applyAutoStatus();
